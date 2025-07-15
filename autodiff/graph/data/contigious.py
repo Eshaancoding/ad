@@ -16,4 +16,4 @@ class ContigiousNode (Node):
         self.child().bck(grad)
         
     def __repr__ (self):
-        return f"{stylize(f"{self.inter_out} <-- ", fore("cyan")) if self.inter_out is not None else ""}Contigious --> {self.res_expr}\n{indent(self.child().__repr__())}"
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}Contigious --> {self.res_expr}\n{indent(self.child().__repr__())}"

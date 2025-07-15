@@ -13,17 +13,21 @@ from ..context import context
 
 def opt_intermediate (nodes: List[Node]):
     
-    bank = []
+    bank = {}
+    new_nodes = []
     for node in nodes:
         # Walk through node. 
         def replace_node_with_bank (node: Node):
-            for b in bank:
-                if node.obj_eq(b):
-                    temp_id = context.get_temp_id()
-                    b.inter_out = temp_id
-                    return IntermediateNode(temp_id, b.shape)
+            if node.id in bank:
+                b = bank[node.id]
+                b.temp_id = b.id
+                n = IntermediateNode(b.id, b.shape)
+                n.res_expr = b.res_expr
+                return n
+                
+            return node
            
-        node.walk(replace_node_with_bank) 
+        new_node = node.walk(replace_node_with_bank) 
     
         # Add to bank
         def fill_bank (node: Node):
@@ -33,8 +37,10 @@ def opt_intermediate (nodes: List[Node]):
                 isinstance(node, UnaryNode) or \
                 isinstance(node, ContigiousNode):
             
-                bank.append(node)
+                bank[node.id] = node
                 
         node.walk(fill_bank)
+
+        new_nodes.append(new_node)
      
-    return nodes 
+    return new_nodes 

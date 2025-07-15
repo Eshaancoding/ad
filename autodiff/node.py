@@ -9,7 +9,7 @@ class Node:
     def __init__(self, children, phantom_shape=None):
         from autodiff import context
         self.children: List[Node] = children
-        self.inter_out = None # also to be filled out by opt_intermediate within execute
+        self.temp_id = None # also to be filled out by opt_intermediate within execute
 
         # as we are creating nodes, we record the latest node being changed within the context
         # as we go through the computation graph, the order of the nodes being changed will also be recorded
@@ -103,21 +103,6 @@ class Node:
                 self.children[idx] = new_child
             
         return res
-    
-    # helper to convert to intermediate node (temp)
-    def temp (self):
-        from .graph.data.intermediate import IntermediateNode
-        from .context import context
-        from .tensor import Tensor
-        from .graph.data import ConstantNode
-        
-        if isinstance(self, Tensor) or isinstance(self, ConstantNode):
-            return self # tensor, constant don't need to be temp
-        
-        new_id = context.get_temp_id()
-        self.inter_out = new_id
-        shape = self.shape
-        return IntermediateNode(new_id, shape)
     
     ############################################################
     ## Binary operations (+, *, -, /)

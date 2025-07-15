@@ -142,8 +142,8 @@ def kernalize_node (node: Node) -> Node:
             n.res_expr = context.temp_to_expr[n.node_id]
         elif hasattr(n, "res_expr"):
             n.res_expr = simplify_expr(ndim_to_global(n.res_expr, n.shape))
-            if n.inter_out is not None:
-                context.temp_to_expr[n.inter_out] = n.res_expr
+            if n.temp_id is not None:
+                context.temp_to_expr[n.temp_id] = n.res_expr
             
             
         for child in n.children:
