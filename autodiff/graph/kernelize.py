@@ -2,6 +2,7 @@ from copy import deepcopy
 from ..node import Node
 from .helper import replace_patterns, global_to_ndim, ndim_to_global
 from ..expr import *
+from ..expr.simplify import simplify_expr
 from enum import Enum
 
 from ..tensor import Tensor
@@ -67,11 +68,14 @@ def kernalize_node (node: Node) -> Node:
             raise Exception("Can't access expr at permute child")
         
         new_res_expr = [Val(Constant(0)) for _ in range(len(res_expr))]
+        dim = [0 for _ in range(len(res_expr))] 
         for i in range(len(res_expr)):
             new_res_expr[i] = deepcopy(res_expr[n.permute_to[i]])
+            dim[i] = n.child().shape[n.permute_to[i]]
         
         new_node = deepcopy(n.child())
         new_node.res_expr = new_res_expr 
+        new_node.shape = dim
         return new_node
     
     ##################################################
@@ -82,9 +86,13 @@ def kernalize_node (node: Node) -> Node:
         except Exception:
             raise Exception("Can't access expr at view child")
         
-        new_res_expr = global_to_ndim(ndim_to_global(res_expr, n.child().shape), n.shape)
+        target_dim = deepcopy(n.shape)        
+        orig_dim = deepcopy(n.child().shape)
+
+        new_res_expr = global_to_ndim(ndim_to_global(res_expr, orig_dim), target_dim)
         new_node = deepcopy(n.child())
         new_node.res_expr = new_res_expr 
+        new_node.shape = target_dim
         return new_node
 
     ##################################################
@@ -99,6 +107,7 @@ def kernalize_node (node: Node) -> Node:
         res_expr[n.dim] = Val(Constant(0))
         new_node = deepcopy(n.child())
         new_node.res_expr = res_expr
+        new_node.shape[n.dim] = n.size
         return new_node
     
     ##################################################
@@ -112,6 +121,7 @@ def kernalize_node (node: Node) -> Node:
         res_expr[n.dim] = Add(res_expr[n.dim], Val(Constant(n.start)))
         new_node = deepcopy(n.child())
         new_node.res_expr = res_expr
+        new_node.shape[n.dim] = n.end - n.start # update shape
         return new_node
 
     node = replace_patterns(node, [
@@ -120,6 +130,16 @@ def kernalize_node (node: Node) -> Node:
         (PhantomResultNode([1,4]).broadcast(0, 8), simplify_broadcast),
         (PhantomResultNode([2,4])[:,0], simplify_index)
     ]) 
+    
+    ##################################################
+    # Simplify all exprs + globalize res expr
+    def simplify_all_exprs (n:Node):
+        if hasattr(n, "res_expr"):
+            n.res_expr = simplify_expr(ndim_to_global(n.res_expr, n.shape))
+            
+        for child in n.children:
+            simplify_all_exprs(child)
 
+    simplify_all_exprs(node)
     
     return node

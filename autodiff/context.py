@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, List
 from .node import Node
 from colored import Fore, Style
 from copy import deepcopy
@@ -29,19 +29,27 @@ class Block ():
         return st
     
     def apply_per_node (self, f: Callable[[Node], None]):
-        from .graph.control.ir_for import ForNode        
-
         for idx in range(len(self.nodes)):
             n = self.nodes[idx]
-            if isinstance(n, ForNode):
+            if hasattr(n, "block"):
                 n.block.apply_per_node(f)
             else:
                 self.nodes[idx] = f(self.nodes[idx])
+                
+    def apply_per_block (self, f: Callable[[List[Node]], Node]):
+        self.nodes = f(self.nodes)
+        
+        for idx in range(len(self.nodes)):
+            n = self.nodes[idx]
+            
+            if hasattr(n, "block"):
+                n.block.apply_per_block(f)
 
 class Context ():
     def __init__ (self):
         self.dep_nodes = []
         self.id = -1
+        self.temp_id = -1
         self.procedure = [Block()] # first procedure is the main block
         self.lock_proc = False
         
@@ -60,13 +68,21 @@ class Context ():
         assert len(self.procedure) > 1, "Attempt to pop main procedure!"
         return self.procedure.pop(-1)
         
-    def apply_per_graph (self, f: Callable[[Node], None]):
+    def apply_per_node (self, f: Callable[[Node], None]):
         self.procedure[0].apply_per_node(f)
         
+    def apply_per_block (self, f: Callable[[List[Node]], None]):
+        self.procedure[0].apply_per_block(f)
+       
     # node id tracking
     def get_id (self):
         self.id += 1
         return self.id
+    
+    # temp id tracking
+    def get_temp_id (self):
+        self.temp_id += 1
+        return self.temp_id
     
     def __repr__(self):
         return self.procedure[0].__repr__()

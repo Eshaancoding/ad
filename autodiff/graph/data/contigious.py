@@ -1,6 +1,7 @@
 from ...node import Node
 from ..helper import indent
 from ...expr import NoneExpr
+from colored import stylize, fore
 
 # This is a light wrapper over the node. However, it's pretty important for optimizations
 # and is used extensively when converting to Kernel procedure
@@ -15,4 +16,4 @@ class ContigiousNode (Node):
         self.child().bck(grad)
         
     def __repr__ (self):
-        return f"Contigious --> {self.res_expr}\n{indent(self.child().__repr__())}"
+        return f"{stylize(f"{self.inter_out} <-- ", fore("cyan")) if self.inter_out is not None else ""}Contigious --> {self.res_expr}\n{indent(self.child().__repr__())}"

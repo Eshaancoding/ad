@@ -33,12 +33,25 @@ class Y(Value):
 class Expression:
     def get_const (self) -> int:
         raise TypeError("Expression is not a const")
+    
+    def __repr__(self):
+        raise TypeError("Repr of expression invalid")
 
-    pass
+    def is_binary (self):
+        return True
+    
+    def __eq__(self, value):
+        if isinstance(value, Expression):
+            return value.__repr__() == self.__repr__()
+        else:
+            return False
 
 class NoneExpr (Expression):
     def __repr__(self):
         return stylize("None", fore("green"))
+    
+    def is_binary(self):
+        return False
 
 # Leaf node
 @dataclass
@@ -48,6 +61,9 @@ class Val(Expression):
     def __repr__(self):
         return self.v.__repr__()
     
+    def is_binary(self):
+        return False
+
     def get_const (self) -> int:
         return self.v.get_const()
 
@@ -57,7 +73,7 @@ class Add(Expression):
     b: Expression
     
     def __repr__(self):
-        return f"{self.a} + {self.b}"
+        return f"({self.a} + {self.b})"
 
 @dataclass
 class Minus(Expression):
@@ -65,7 +81,7 @@ class Minus(Expression):
     b: Expression
     
     def __repr__(self):
-        return f"{self.a} - {self.b}"
+        return f"({self.a} - {self.b})"
 
 @dataclass
 class Mult(Expression):
@@ -73,7 +89,7 @@ class Mult(Expression):
     b: Expression
 
     def __repr__(self):
-        return f"{self.a} * {self.b}"
+        return f"({self.a} * {self.b})"
 
 @dataclass
 class Div(Expression):
@@ -81,7 +97,7 @@ class Div(Expression):
     b: Expression
     
     def __repr__(self):
-        return f"{self.a} / {self.b}"
+        return f"({self.a} / {self.b})"
 
 @dataclass
 class Remainder(Expression):
@@ -89,7 +105,7 @@ class Remainder(Expression):
     b: Expression
 
     def __repr__(self):
-        return f"{self.a} % {self.b}"
+        return f"({self.a} % {self.b})"
 
 @dataclass
 class ShiftRight(Expression):
@@ -97,7 +113,7 @@ class ShiftRight(Expression):
     b: Expression
     
     def __repr__(self):
-        return f"{self.a} << {self.b}"
+        return f"({self.a} >> {self.b})"
 
 @dataclass
 class ShiftLeft(Expression):
@@ -105,7 +121,7 @@ class ShiftLeft(Expression):
     b: Expression
     
     def __repr__(self):
-        return f"{self.a} >> {self.b}"
+        return f"({self.a} << {self.b})"
 
 @dataclass
 class BitwiseAnd(Expression):
@@ -113,7 +129,7 @@ class BitwiseAnd(Expression):
     b: Expression
 
     def __repr__(self):
-        return f"{self.a} & {self.b}"
+        return f"({self.a} & {self.b})"
 
 @dataclass
 class MoreThan(Expression):
@@ -121,7 +137,7 @@ class MoreThan(Expression):
     b: Expression
 
     def __repr__(self):
-        return f"{self.a} > {self.b}"
+        return f"({self.a} > {self.b})"
 
 @dataclass
 class LessThan(Expression):
@@ -129,5 +145,5 @@ class LessThan(Expression):
     b: Expression
 
     def __repr__(self):
-        return f"{self.a} < {self.b}"
+        return f"({self.a} < {self.b})"
     

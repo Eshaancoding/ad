@@ -13,10 +13,6 @@ class DotProdNode (Node):
         right_shape = right.shape
         
         # access expr 
-        # fill be filled out by the kernealize
-        self.left_expr = NoneExpr()
-        self.right_expr = NoneExpr()
-        
         # must be shared + defined across nodes
         self.res_expr = NoneExpr()
         self.shape = [self.left().shape[0], self.right().shape[1]]
@@ -29,4 +25,4 @@ class DotProdNode (Node):
         self.right().bck(dot(self.left().T(), grad))
         
     def __repr__ (self):
-        return f"Dot prod {stylize(self.left().shape, fore("yellow") + style("bold"))} x {stylize(self.right().shape, fore("yellow") + style("bold"))} --> {self.res_expr} \n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"
+        return f"{stylize(f"{self.inter_out} <-- ", fore("cyan")) if self.inter_out is not None else ""}Dot prod {stylize(self.left().shape, fore("yellow") + style("bold"))} x {stylize(self.right().shape, fore("yellow") + style("bold"))} --> {self.res_expr} \n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"

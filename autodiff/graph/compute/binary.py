@@ -34,4 +34,4 @@ class BinaryNode (Node):
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        return f"{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"
+        return f"{stylize(f"{self.inter_out} <-- ", fore("cyan")) if self.inter_out is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"

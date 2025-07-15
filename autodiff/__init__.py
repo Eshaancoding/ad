@@ -27,17 +27,29 @@ def dot (left: Node, right: Node) -> Node:
 def execute ():
     from .graph.opt import opt_node
     from .graph.kernelize import kernalize_node
+    from .graph.fuse import fuse_node
+    from .graph.intermediate import opt_intermediate
+
     # lock procedure
     context.lock_proc = True
 
     # apply graph-level optimizations
-    context.apply_per_graph(opt_node)
+    context.apply_per_node(opt_node)
     
-    # prepare graph into kernel level optimizations
-    # kernel fusion happens here as well
-    context.apply_per_graph(kernalize_node)
+    # Kernalize the graph; remove the data cmds and just use access expressions
+    # at the point, all the binary ops can be represented by actual kernels
+    context.apply_per_node(kernalize_node)
+   
+    # Find the repeated intermediate operations between graphs within the same block
+    # extremely helpful for linearize. 
+    # should be done before kernel fusion
+    context.apply_per_block(opt_intermediate)
+    
+    # Kernel fusion
+    context.apply_per_node(fuse_node)
     
     # Linearize
+    
     
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed

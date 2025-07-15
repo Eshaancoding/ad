@@ -8,7 +8,9 @@ class ForNode (Node):
     def __init__(self, block: Block, r: range):
         super().__init__([])
         
+        # must define self.block in order to be treated as a "block node"
         self.block = block
+
         self.r = r
         
     def bck(self, grad):

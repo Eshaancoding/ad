@@ -68,7 +68,7 @@ class Tensor (Node):
         return self.grad
     
     def __repr__ (self) -> str:
-        return f"Tensor(id: {self.id}, dim: {self.shape}, access: {self.res_expr})"
+        return f"Tensor(id: {self.id}, access: {self.res_expr})"
     
     def _gen_normal_random(mu=0, sigma=1):
         # Box-Muller transform
