@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import Callable, Tuple, List
 from ..node import Node
+from ..expr import *
 
 # Good for debugging
 def indent(text: str, size: int = 1, prefix: str = "  ") -> str:
@@ -14,7 +15,7 @@ def _internal_repl_pat (node: Node, pattern_dict: List[Tuple[Node, Callable[[Nod
         for pattern, replacement in pattern_dict:
             if node.type_eq(pattern): # only match the type
                 r = replacement(node)
-                if isinstance(r, Node):
+                if r is not None and isinstance(r, Node):
                     return (r, True)
         
         # Otherwise, recurse into children
@@ -39,21 +40,38 @@ def _internal_repl_pat (node: Node, pattern_dict: List[Tuple[Node, Callable[[Nod
     print("=================== REACHED PASSED MAX PATTERN ITERATION ============")
     return (node, False)
 
-
 def replace_patterns(node: Node, pattern_dict: List[Tuple[Node, Callable[[Node], Node]]]) -> Node:
     v, _ = _internal_repl_pat(node, pattern_dict)    
     return v
 
-    # # Check for pattern match first,
-    # for pattern, replacement in pattern_dict:
-    #     if node.type_eq(pattern): # only match the type
-    #         r = replacement(node)
-    #         if isinstance(r, Node):
-    #             return r
-    
-    # # Otherwise, recurse into children
-    # new_children = [replace_patterns(child, pattern_dict) for child in node.children]
-    # new_node = deepcopy(node)
-    # new_node.children = new_children
+# shape helper
+def calc_stride(shape: List[int]) -> List[Expression]:
+    n = len(shape)
+    strides: List[Expression] = [Val(Constant(1)) for _ in range(n)]
+    for i in reversed(range(n - 1)):
+        next_val = strides[i + 1].get_const() * shape[i + 1]
+        strides[i] = Val(Constant(next_val))
+    return strides
 
-    # return new_node
+def global_to_ndim(index: Expression, shape: List[int]) -> List[Expression]:
+    strides = calc_stride(shape)
+    return [
+        Remainder(
+            Div(index, strides[i]),
+            Val(Constant(shape[i]))
+        )
+        for i in range(len(shape))
+    ]
+
+def ndim_to_global(dim: List[Expression], shape: List[int]) -> Expression:
+    strides = calc_stride(shape)
+    global_expr = Mult(dim[0], strides[0])
+    for i in range(1, len(shape)):
+        global_expr = Add(
+            global_expr,
+            Mult(
+                dim[i], 
+                strides[i]
+            )
+        )
+    return global_expr

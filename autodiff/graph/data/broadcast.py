@@ -11,17 +11,18 @@ class BroadcastNode (Node):
         self.dim = dim
         self.size = size 
         
+        # data cmds doesn't implement the res_expr 
+        # however, does implement shape
+        p = deepcopy(self.child().shape)
+        p[self.dim] = self.size
+        self.shape = p
+        
     def bck (self, grad:Node):
         if not isinstance (grad, Node):
             raise TypeError("Grad is not node!")
         
-        self.child().bck(grad.sum(self.dim)) # implement sum
+        self.child().bck(grad.sum(self.dim))
         
-    def shape (self):
-        p = deepcopy(self.child().shape())
-        p[self.dim] = self.size
-        return p
-    
     def __repr__ (self) -> str:
         return f"Broadcast dim {self.dim} to size {self.size}\n{indent(self.child().__repr__())}"
         
@@ -43,7 +44,7 @@ def is_broadcastable(dim_a: list[int], dim_b: list[int]) -> bool:
     return True
 
 def make_broadcast_node(n: Node, target_dim: list[int]) -> Node:
-    n_dim = deepcopy(n.shape())
+    n_dim = deepcopy(n.shape)
     assert len(target_dim) >= len(n_dim), "Wrong broadcasted node"
 
     # Pad with 1s
@@ -63,30 +64,30 @@ def try_broadcast(a: Node, b: Node) -> tuple[Node, Node]:
     from .constant import ConstantNode
 
     # Normalize scalar tensors
-    if len(a.shape()) == 0 and len(b.shape()) > 0:
+    if len(a.shape) == 0 and len(b.shape) > 0:
         a = a.unsqueeze(0)
-    if len(b.shape()) == 0 and len(a.shape()) > 0:
+    if len(b.shape) == 0 and len(a.shape) > 0:
         b = b.unsqueeze(0)
 
-    if a.shape() == b.shape():
+    if a.shape == b.shape:
         return a, b
 
     if isinstance(a, ConstantNode) or isinstance(b, ConstantNode):
         return a, b
 
-    if is_broadcastable(a.shape(), b.shape()):
+    if is_broadcastable(a.shape, b.shape):
         # Prefer broadcasting smaller/shallower tensor
-        a_dim_len = len(a.shape())
-        b_dim_len = len(b.shape())
+        a_dim_len = len(a.shape)
+        b_dim_len = len(b.shape)
 
         if a_dim_len == b_dim_len:
-            is_a_broadcast = sum(a.shape()) < sum(b.shape())
+            is_a_broadcast = sum(a.shape) < sum(b.shape)
         else:
             is_a_broadcast = a_dim_len < b_dim_len
 
         if is_a_broadcast:
-            return make_broadcast_node(a, b.shape()), b
+            return make_broadcast_node(a, b.shape), b
         else:
-            return a, make_broadcast_node(b, a.shape())
+            return a, make_broadcast_node(b, a.shape)
 
-    raise ValueError(f"Cannot broadcast {a.shape()} to {b.shape()}")
+    raise ValueError(f"Cannot broadcast {a.shape} to {b.shape}")

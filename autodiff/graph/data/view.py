@@ -28,21 +28,18 @@ class ViewNode (Node):
 
     def __init__(self, child:Node, target_dim: list[int]):
         super().__init__([child])
-        child_dim = child.shape() 
+        child_dim = child.shape 
         
         # assert view dimensions are correct
         assert math.prod(child_dim) == math.prod(target_dim), "View dimensions are incorrect"
         
-        self.target_dim = target_dim 
+        self.shape = target_dim 
         
     def bck(self, grad: Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not node!")
         
-        self.child().bck(grad.view(self.child().shape()))
+        self.child().bck(grad.view(self.child().shape))
 
-    def shape (self):
-        return self.target_dim
-    
     def __repr__ (self):
-        return f"View from {self.child().shape()} to {self.target_dim}\n{indent(self.child().__repr__())}"
+        return f"View from {self.child().shape} to {self.shape}\n{indent(self.child().__repr__())}"

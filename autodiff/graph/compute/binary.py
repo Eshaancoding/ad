@@ -1,7 +1,10 @@
 from ...node import Node
+import math
 from ..helper import indent
 from enum import Enum
 from typing import List
+from ...expr import NoneExpr
+from colored import stylize, fore, style
 
 class BinaryOp (Enum):
     ADD=1
@@ -11,8 +14,12 @@ class BinaryNode (Node):
     def __init__(self, left: Node, right: Node, op: BinaryOp):
         super().__init__([left, right])
 
-        assert left.shape() == right.shape(), f"Dimensional mismatch at binary! {left.shape()} and {right.shape()}"
+        assert left.shape == right.shape, f"Dimensional mismatch at binary! {left.shape} and {right.shape}"
         self.op = op
+        
+        # must be shared + defined across nodes (TODO: move to super().__init__())
+        self.res_expr = NoneExpr()
+        self.shape = self.left().shape 
     
     def bck (self, grad:Node):
         if not isinstance(grad, Node):
@@ -25,8 +32,6 @@ class BinaryNode (Node):
             self.left().bck(grad * self.right())
             self.right().bck(grad * self.left())
 
-    def shape (self) -> List[int]:
-        return self.left().shape()
-    
     def __repr__ (self) -> str:
-        return f"{self.op}\n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"
+        total = math.prod(self.shape)
+        return f"{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"

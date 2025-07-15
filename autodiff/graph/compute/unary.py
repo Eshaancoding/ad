@@ -2,7 +2,9 @@ from typing import Dict, Callable, Optional, List
 from ...node import Node
 from ..helper import indent
 from enum import Enum
+from ...expr import NoneExpr
 import math
+from colored import stylize, fore, style
 
 class UnaryOp (Enum):
     EXP2=1
@@ -20,6 +22,8 @@ class UnaryNode (Node):
     def __init__(self, child:Node, op: UnaryOp):
         super().__init__([child])
 
+        self.shape = self.child().shape
+        self.res_expr = NoneExpr()
         self.op = op
         
     def bck (self, grad:Node):
@@ -46,8 +50,6 @@ class UnaryNode (Node):
         if g is not None:
             self.child().bck(g)
         
-    def shape (self) -> List[int]:
-        return self.child().shape()
-    
     def __repr__(self) -> str:
-        return f"{self.op}\n{indent(self.child().__repr__())}"
+        total = math.prod(self.shape)
+        return f"{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.child().__repr__())}"

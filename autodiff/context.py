@@ -60,7 +60,7 @@ class Context ():
         assert len(self.procedure) > 1, "Attempt to pop main procedure!"
         return self.procedure.pop(-1)
         
-    def apply_per_node (self, f: Callable[[Node], None]):
+    def apply_per_graph (self, f: Callable[[Node], None]):
         self.procedure[0].apply_per_node(f)
         
     # node id tracking

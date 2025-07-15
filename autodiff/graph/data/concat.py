@@ -8,8 +8,8 @@ class ConcatNode (Node):
         super().__init__([left, right])
         
         # assert shape
-        left_shape = left.shape()
-        right_shape = right.shape()
+        left_shape = left.shape
+        right_shape = right.shape
         
         assert len(left_shape) == len(right_shape), "Concat shape is not equal"
         for i in range(len(left_shape)):
@@ -17,15 +17,15 @@ class ConcatNode (Node):
             assert left_shape[i] == right_shape[i], "Concat dim mismatch"
         
         self.dim = dim
-         
-    def shape(self):
-        d = deepcopy(self.left().shape())
-        d[self.dim] += self.right().shape()[self.dim]
-        return d
+        
+        # calc shape
+        d = deepcopy(self.left().shape)
+        d[self.dim] += self.right().shape[self.dim]
+        self.shape = d
     
     def bck (self, grad:Node):
-        l_dim = self.left().shape()[self.dim]
-        r_dim = self.right().shape()[self.dim]
+        l_dim = self.left().shape[self.dim]
+        r_dim = self.right().shape[self.dim]
 
         self.left().bck(
             IndexNode(grad, 0, l_dim, self.dim)

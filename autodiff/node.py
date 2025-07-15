@@ -6,14 +6,15 @@ from colored import Fore, Style
 class Node:
     ############################################################
     ## Derived methods/init
-    def __init__(self, children, phantom=False):
+    def __init__(self, children, phantom_shape=None):
         from autodiff import context
         self.children = children
+        self.phantom_shape = phantom_shape
 
         # as we are creating nodes, we record the latest node being changed within the context
         # as we go through the computation graph, the order of the nodes being changed will also be recorded
         # and being recorded into a procedure
-        if not phantom:
+        if phantom_shape is None:
             self.id = context.get_id()
             for ch in self.children:
                 if not isinstance(ch, Node): 
@@ -21,13 +22,12 @@ class Node:
                 context.remove_from_dep(ch)
 
             context.add_to_dep(self)
+        else:
+            self.shape = phantom_shape
         
     def bck (self, grad):
         raise NotImplementedError
     
-    def shape (self) -> List[int]:
-        raise NotImplementedError
-        
     def __repr__ (self) -> str:
         raise NotImplementedError
     
@@ -42,9 +42,13 @@ class Node:
         return self.id == other.id
     
     def type_eq (self, other): 
+        from .phantom import PhantomNode
+        if isinstance(other, PhantomNode):
+            return other.phantom_type_eq(self)
+
         assert isinstance(other, Node), "type eq input invalid"
         
-        res = type(self) == type(other)
+        res = (type(self) == type(other)) 
         if self.c_len() != other.c_len():
             return False
 
@@ -58,7 +62,7 @@ class Node:
     # Calls backend 
     def backward (self):
         from .graph.data.constant import ConstantNode
-        self.bck(ConstantNode(1.0, self.shape()))
+        self.bck(ConstantNode(1.0, self.shape))
     
     # helper for binary ops
     def _to_node (self, node, dim: List[int]):
@@ -94,37 +98,37 @@ class Node:
     def __add__ (self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
-        a, b = try_broadcast(self, self._to_node(other, self.shape()))
+        a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.ADD) 
     
     def __mul__ (self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
-        a, b = try_broadcast(self, self._to_node(other, self.shape()))
+        a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
     
     def __sub__(self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
-        a, b = try_broadcast(self, self._to_node(other, self.shape()) * -1.0)
+        a, b = try_broadcast(self, self._to_node(other, self.shape) * -1.0)
         return BinaryNode(a, b, BinaryOp.ADD)
     
     def __rsub__(self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
-        a, b = try_broadcast(self._to_node(other, self.shape()), self * -1.0)
+        a, b = try_broadcast(self._to_node(other, self.shape), self * -1.0)
         return BinaryNode(a, b, BinaryOp.ADD)
     
     def __truediv__(self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
-        a, b = try_broadcast(self, self._to_node(other, self.shape()).recip())
+        a, b = try_broadcast(self, self._to_node(other, self.shape).recip())
         return BinaryNode(a, b, BinaryOp.MULT)
     
     def __rtruediv__(self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
-        a, b = try_broadcast(self.recip(), self._to_node(other, self.shape()))
+        a, b = try_broadcast(self.recip(), self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
     
     ############################################################
@@ -199,15 +203,15 @@ class Node:
     ## Data Manipulation operations
     def broadcast (self, dim: int, size: int):
         from .graph.data.broadcast import BroadcastNode
-        assert self.shape()[dim] == 1, "Broadcast dim invalid"
+        assert self.shape[dim] == 1, "Broadcast dim invalid"
         return BroadcastNode(self, dim, size)
     
     def view (self, target_dim: list[int]):
         from .graph.data.view import ViewNode
         # handle -1 dim 
-        target_dim = ViewNode.handle_minus_dim(self.shape(), target_dim)
+        target_dim = ViewNode.handle_minus_dim(self.shape, target_dim)
 
-        if self.shape() != target_dim:
+        if self.shape != target_dim:
             return ViewNode(self, target_dim)
         else:
             return self
@@ -228,9 +232,9 @@ class Node:
         for i in idx:
             if isinstance(i, slice):
                 start = 0 if i.start is None else i.start
-                end = self.shape()[dim_counter] if i.stop is None else i.stop
+                sh = self.shape[dim_counter]
+                end = sh if i.stop is None else i.stop
                 
-                sh = self.shape()[dim_counter]
                 if sh != end - start:
                     result = IndexNode(result, start, end, dim_counter)
                 dim_counter += 1
@@ -256,7 +260,7 @@ class Node:
     
     def _reduce_proc (self, dim: int, op):
         from .graph.compute.reduce import ReduceNode
-        p_dim = len(self.shape()) 
+        p_dim = len(self.shape) 
 
         # Handle negative dimension
         if dim < 0:
@@ -271,7 +275,7 @@ class Node:
         node = self.permute(permute_to)
 
         # ========= view as 2D [other_dims, target_dim_size] =========
-        new_dim = deepcopy(node.shape())
+        new_dim = deepcopy(node.shape)
         last_dim = new_dim[-1]
         node = node.view([-1, last_dim])
 
@@ -300,26 +304,26 @@ class Node:
         
     ## Data operations derived from the above core ops
     def flatten (self):
-        return self.view([math.prod(self.shape())])
+        return self.view([math.prod(self.shape)])
 
     def unsqueeze (self, dim:int):
         if dim < 0:
-            dim = len(self.shape()) + dim + 1
+            dim = len(self.shape) + dim + 1
 
-        d = deepcopy(self.shape())
+        d = deepcopy(self.shape)
         d.insert(dim, 1)
         return self.view(d)
 
     def squeeze (self, dim:int):
-        d = deepcopy(self.shape())
+        d = deepcopy(self.shape)
         v = d.pop(dim)
         assert v == 1, "Can't squeeze a non-one dim"
         return self.view(d)
     
     def T (self):
-        assert len(self.shape()) == 2, "Can't call transpose on a non-2-dim tensor"
+        assert len(self.shape) == 2, "Can't call transpose on a non-2-dim tensor"
         return self.permute([1, 0])
 
     def mT (self): 
-        assert len(self.shape()) == 3, "Can't call batch transpose on a non-3-dim tensor"
+        assert len(self.shape) == 3, "Can't call batch transpose on a non-3-dim tensor"
         return self.permute([0, 2, 1])

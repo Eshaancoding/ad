@@ -11,13 +11,12 @@ class IndexNode (Node):
         self.end = end
         self.dim = dim
         
-    def shape (self):
-        d = deepcopy(self.child().shape()) 
+        d = deepcopy(self.child().shape) 
         d[self.dim] = self.end - self.start
-        return d
-    
+        self.shape = d
+        
     def bck(self, grad):
-        c_dim = self.child().shape()        
+        c_dim = self.child().shape        
         
         first_dim = deepcopy(c_dim)
         first_dim[self.dim] = self.start

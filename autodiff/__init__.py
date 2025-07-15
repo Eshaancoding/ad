@@ -10,7 +10,7 @@ def concat (nodes: List[Tensor], dim: int) -> Tensor:
     # filter nodes by shape if none
     l = []    
     for n in nodes:
-        if prod(n.shape()) == 0: continue
+        if prod(n.shape) == 0: continue
         l.append(n)     
         
     # else, concat
@@ -26,15 +26,24 @@ def dot (left: Node, right: Node) -> Node:
 
 def execute ():
     from .graph.opt import opt_node
+    from .graph.kernelize import kernalize_node
     # lock procedure
     context.lock_proc = True
 
     # apply graph-level optimizations
-    context.apply_per_node(opt_node)
+    context.apply_per_graph(opt_node)
     
-    # convert to kernel matrix 
+    # prepare graph into kernel level optimizations
+    # kernel fusion happens here as well
+    context.apply_per_graph(kernalize_node)
     
-    # 
+    # Linearize
+    
+    # apply linear optimizations
+    # Dep opt, mem opt, as well as some memory accessing regrouping if needed
+    # see if you can make fusion better here as well (test)
+    
+    # Send procedure to device to be executed
 
     pass
 

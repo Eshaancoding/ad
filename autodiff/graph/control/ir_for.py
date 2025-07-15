@@ -14,8 +14,5 @@ class ForNode (Node):
     def bck(self, grad):
         raise TypeError("Calling backward on a for node") 
     
-    def shape (self):
-        raise TypeError("Calling shape on a for node")
-    
     def __repr__(self):
         return f"For {self.r.start} to {self.r.stop}:\n{indent(self.block.__repr__(), 2)}"

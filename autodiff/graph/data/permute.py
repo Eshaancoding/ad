@@ -5,20 +5,20 @@ class PermuteNode (Node):
     def __init__(self, child:Node, permute_to: list[int]):
         super().__init__([child])
         
-        assert len(child.shape()) == len(permute_to), f"permute to invalid dim {len(child.shape())} {permute_to}"
+        assert len(child.shape) == len(permute_to), f"permute to invalid dim {len(child.shape)} {permute_to}"
 
         for i in permute_to:
-            assert i < len(child.shape()), f"Invalid permute vec: {permute_to} with child shape: {child.shape()}"
+            assert i < len(child.shape), f"Invalid permute vec: {permute_to} with child shape: {child.shape}"
         
         self.permute_to = permute_to
         
-    def shape (self):
-        c_dim = self.child().shape()
+        # calc shape
+        c_dim = self.child().shape
         dim = [0 for _ in range(len(c_dim))] 
         for i in range(len(c_dim)):
             dim[i] = c_dim[self.permute_to[i]]
-        return dim
-    
+        self.shape = dim
+        
     def bck(self, grad:Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not node!")

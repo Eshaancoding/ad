@@ -1,24 +1,22 @@
 from .node import Node
-from typing import List
+from typing import List, Optional
 import random
 import math
+from .expr import NoneExpr
 
 class Tensor (Node):
-    def __init__(self, data: any):
-        from autodiff import context
+    def __init__(self, data: any, dim: Optional[List[int]]):
         super().__init__([])
         
-        self.dim = list(Tensor._get_shape_and_validate(data))
-        self.data = Tensor._flatten(data)
-        self.grad = None
-        
-    def __init__ (self, data: List[float], dim: List[int]):
-        from autodiff import context
-        super().__init__([])
+        if dim is not None:
+            self.shape = dim 
+            self.data = data 
+        else: 
+            self.shape = list(Tensor._get_shape_and_validate(data))
+            self.data = Tensor._flatten(data)
 
-        self.dim = dim
-        self.data = data
         self.grad = None
+        self.res_expr = NoneExpr() # access expression. Not filled until kernalize
 
     def _get_shape_and_validate(data):
         if not isinstance(data, list):
@@ -69,11 +67,8 @@ class Tensor (Node):
 
         return self.grad
     
-    def shape (self) -> List[int]:
-        return self.dim
-    
     def __repr__ (self) -> str:
-        return f"Tensor(id: {self.id}, dim: {self.dim})"
+        return f"Tensor(id: {self.id}, dim: {self.shape}, access: {self.res_expr})"
     
     def _gen_normal_random(mu=0, sigma=1):
         # Box-Muller transform
