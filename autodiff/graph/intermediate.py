@@ -21,7 +21,7 @@ def opt_intermediate (nodes: List[Node]):
                 if node.obj_eq(b):
                     temp_id = context.get_temp_id()
                     b.inter_out = temp_id
-                    return IntermediateNode(temp_id, b.shape, b.res_expr)
+                    return IntermediateNode(temp_id, b.shape)
            
         node.walk(replace_node_with_bank) 
     

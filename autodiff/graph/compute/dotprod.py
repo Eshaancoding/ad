@@ -21,8 +21,8 @@ class DotProdNode (Node):
         assert len(right_shape) == 2, "Right shape of dot prod must be 2"
         
     def bck (self, grad:Node):
-        self.left().bck(dot(grad, self.right().T()))
-        self.right().bck(dot(self.left().T(), grad))
+        self.left().bck(dot(grad, self.right().temp().T()))
+        self.right().bck(dot(self.left().temp().T(), grad))
         
     def __repr__ (self):
         return f"{stylize(f"{self.inter_out} <-- ", fore("cyan")) if self.inter_out is not None else ""}Dot prod {stylize(self.left().shape, fore("yellow") + style("bold"))} x {stylize(self.right().shape, fore("yellow") + style("bold"))} --> {self.res_expr} \n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"

@@ -29,8 +29,8 @@ class BinaryNode (Node):
             self.left().bck(grad)
             self.right().bck(grad)
         elif self.op == BinaryOp.MULT:
-            self.left().bck(grad * self.right())
-            self.right().bck(grad * self.left())
+            self.left().bck(grad * self.right().temp())
+            self.right().bck(grad * self.left().temp())
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)

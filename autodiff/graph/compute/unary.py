@@ -32,7 +32,7 @@ class UnaryNode (Node):
         
         grad_dict: Dict[UnaryOp, Callable[[Node, Node], Optional[Node]]] = {
             # Derivatives
-            UnaryOp.EXP2:  lambda grad, _: grad * math.log(2.0) * self,
+            UnaryOp.EXP2:  lambda grad, _: grad * math.log(2.0) * self.temp(),
             UnaryOp.LOG2:  lambda grad, parent: grad * math.log2(math.e) * parent.recip(),
             UnaryOp.SIN:   lambda grad, parent: grad * parent.cos(),
             UnaryOp.RECIP: lambda grad, parent: grad * (-1.0 / (parent.pow2())),
@@ -46,7 +46,7 @@ class UnaryNode (Node):
             UnaryOp.LESS_OR_EQ_ZERO: lambda _: None,
         }
         
-        g = grad_dict[self.op](grad, self.child()) # in the backward sense, "child" becomes the "parent"
+        g = grad_dict[self.op](grad, self.child().temp()) # in the backward sense, "child" becomes the "parent"
         if g is not None:
             self.child().bck(g)
         

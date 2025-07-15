@@ -104,6 +104,21 @@ class Node:
             
         return res
     
+    # helper to convert to intermediate node (temp)
+    def temp (self):
+        from .graph.data.intermediate import IntermediateNode
+        from .context import context
+        from .tensor import Tensor
+        from .graph.data import ConstantNode
+        
+        if isinstance(self, Tensor) or isinstance(self, ConstantNode):
+            return self # tensor, constant don't need to be temp
+        
+        new_id = context.get_temp_id()
+        self.inter_out = new_id
+        shape = self.shape
+        return IntermediateNode(new_id, shape)
+    
     ############################################################
     ## Binary operations (+, *, -, /)
     def __add__ (self, other):
@@ -112,11 +127,17 @@ class Node:
         a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.ADD) 
     
+    def __radd__ (self, other):
+        return self.__add__(other)
+    
     def __mul__ (self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
         a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
+    
+    def __rmul__ (self, other):
+        return self.__mul__(other)
     
     def __sub__(self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
@@ -141,6 +162,9 @@ class Node:
         from .graph.data.broadcast import try_broadcast 
         a, b = try_broadcast(self.recip(), self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
+    
+    def __neg__ (self):
+        return self.__mul__(-1.0)
     
     ############################################################
     ## Comparison operations

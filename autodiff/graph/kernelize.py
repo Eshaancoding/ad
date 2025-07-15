@@ -12,6 +12,7 @@ from .compute.binary import BinaryNode
 from .compute.unary import UnaryNode
 from .data.contigious import ContigiousNode
 from .data.constant import ConstantNode
+from .data.intermediate import IntermediateNode
 
 from ..phantom import *
 
@@ -48,6 +49,8 @@ def fill_access_expr (node: Node, access_type: AccessType):
         case Tensor() as n:
             n.res_expr = make_access_type(access_type, n.shape) 
         case ConstantNode() as n:
+            pass
+        case IntermediateNode() as n:
             pass
         case _ as n:
             if len(n.children) == 2:
@@ -134,8 +137,14 @@ def kernalize_node (node: Node) -> Node:
     ##################################################
     # Simplify all exprs + globalize res expr
     def simplify_all_exprs (n:Node):
-        if hasattr(n, "res_expr"):
+        from ..context import context
+        if isinstance(n, IntermediateNode):
+            n.res_expr = context.temp_to_expr[n.node_id]
+        elif hasattr(n, "res_expr"):
             n.res_expr = simplify_expr(ndim_to_global(n.res_expr, n.shape))
+            if n.inter_out is not None:
+                context.temp_to_expr[n.inter_out] = n.res_expr
+            
             
         for child in n.children:
             simplify_all_exprs(child)

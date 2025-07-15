@@ -52,6 +52,7 @@ class Context ():
         self.temp_id = -1
         self.procedure = [Block()] # first procedure is the main block
         self.lock_proc = False
+        self.temp_to_expr = {}
         
     def add_to_dep (self, node:Node):
         if not self.lock_proc:
