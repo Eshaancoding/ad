@@ -11,27 +11,34 @@ class BinaryOp (Enum):
     MULT=2
 
 class BinaryNode (Node):
+    __match_args__ = ("left", "right", "op")
     def __init__(self, left: Node, right: Node, op: BinaryOp):
         super().__init__([left, right])
 
         assert left.shape == right.shape, f"Dimensional mismatch at binary! {left.shape} and {right.shape}"
+        self.left = left
+        self.right = right
         self.op = op
         
         # must be shared + defined across nodes (TODO: move to super().__init__())
         self.res_expr = NoneExpr()
-        self.shape = self.left().shape 
+        self.shape = self.left.shape 
     
     def bck (self, grad:Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not a node!")
         
         if self.op == BinaryOp.ADD:
-            self.left().bck(grad)
-            self.right().bck(grad)
+            self.left.bck(grad)
+            self.right.bck(grad)
         elif self.op == BinaryOp.MULT:
-            self.left().bck(grad * self.right())
-            self.right().bck(grad * self.left())
+            self.left.bck(grad * self.right)
+            self.right.bck(grad * self.left)
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.left.__repr__())}\n{indent(self.right.__repr__())}"
+    
+    def format_single (self) -> str:
+        total = math.prod(self.shape)
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} --> ({self.left.id}, {self.right.id})"

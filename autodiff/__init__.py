@@ -1,7 +1,7 @@
 from .tensor import *
 from .graph.data.concat import ConcatNode
 from .context import context
-from math import prod
+from math import prod, factorial
 from typing import Callable
 
 ##########################################
@@ -27,8 +27,8 @@ def dot (left: Node, right: Node) -> Node:
 def execute ():
     from .graph.opt import opt_node
     from .graph.kernelize import kernalize_node
-    from .graph.fuse import fuse_node
     from .graph.intermediate import opt_intermediate
+    from .graph.linearize import linearize
 
     # lock procedure
     context.lock_proc = True
@@ -39,17 +39,9 @@ def execute ():
     # Kernalize the graph; remove the data cmds and just use access expressions
     # at the point, all the binary ops can be represented by actual kernels
     context.apply_per_node(kernalize_node)
-   
-    # Find the repeated intermediate operations between graphs within the same block
-    # extremely helpful for linearize. 
-    # should be done before kernel fusion
-    context.apply_per_block(opt_intermediate)
     
-    # Kernel fusion
-    context.apply_per_node(fuse_node)
-    
-    # Linearize
-    
+    # Linearize + fusion
+    linearize(context) 
     
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
@@ -74,5 +66,5 @@ def ir_for (r: range, f: Callable):
 
 ##########################################
 ## Misc
-def proc ():
-    return context.procedure[0]
+def print_graph ():
+    context.print_graph()

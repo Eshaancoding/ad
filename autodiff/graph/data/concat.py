@@ -4,6 +4,7 @@ from copy import deepcopy
 from .index import IndexNode
 
 class ConcatNode (Node):
+    __match_args__ = ("left", "right", "dim")
     def __init__(self, left:Node, right:Node, dim: int):
         super().__init__([left, right])
         
@@ -17,23 +18,28 @@ class ConcatNode (Node):
             assert left_shape[i] == right_shape[i], "Concat dim mismatch"
         
         self.dim = dim
+        self.left = left
+        self.right = right
         
         # calc shape
-        d = deepcopy(self.left().shape)
-        d[self.dim] += self.right().shape[self.dim]
+        d = deepcopy(self.left.shape)
+        d[self.dim] += self.right.shape[self.dim]
         self.shape = d
     
     def bck (self, grad:Node):
-        l_dim = self.left().shape[self.dim]
-        r_dim = self.right().shape[self.dim]
+        l_dim = self.left.shape[self.dim]
+        r_dim = self.right.shape[self.dim]
 
-        self.left().bck(
+        self.left.bck(
             IndexNode(grad, 0, l_dim, self.dim)
         )
         
-        self.right().bck(
+        self.right.bck(
             IndexNode(grad, l_dim, l_dim+r_dim, self.dim)
         )
     
     def __repr__ (self):
-        return f"Concat at dim: {self.dim}\n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"
+        return f"Concat at dim: {self.dim}\n{indent(self.left.__repr__())}\n{indent(self.right.__repr__())}"
+    
+    def format_single (self):
+        return f"{self.id} = Concat at dim: {self.dim}\n{indent(self.left.__repr__())} --> ({self.left.id}, {self.right.id})"

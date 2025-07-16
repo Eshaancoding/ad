@@ -70,6 +70,9 @@ class Tensor (Node):
     def __repr__ (self) -> str:
         return f"Tensor(id: {self.id}, access: {self.res_expr})"
     
+    def format_single (self) -> str:
+        return f"Tensor(id: {self.id}, access: {self.res_expr})"
+    
     def _gen_normal_random(mu=0, sigma=1):
         # Box-Muller transform
         u1 = random.random()

@@ -1,5 +1,4 @@
 from ..expr import *
-from copy import deepcopy
 import math
 
 # level 1 simplifications
@@ -93,7 +92,7 @@ def simpl_expr_inner (expr: Expression) -> Expression:
 # didn't wanna think too hard...
 # TODO: Might not scale well for large exprs
 def simplify_expr (expr: Expression):
-    start = deepcopy(expr)
+    start = expr
     while True:
         end = simpl_expr_inner(expr)
         

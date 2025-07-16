@@ -19,10 +19,12 @@ class UnaryOp (Enum):
     LESS_OR_EQ_ZERO=10
 
 class UnaryNode (Node):
+    __match_args__ = ("child", "op")
     def __init__(self, child:Node, op: UnaryOp):
         super().__init__([child])
 
-        self.shape = self.child().shape
+        self.child = child
+        self.shape = self.child.shape
         self.res_expr = NoneExpr()
         self.op = op
         
@@ -46,10 +48,14 @@ class UnaryNode (Node):
             UnaryOp.LESS_OR_EQ_ZERO: lambda _: None,
         }
         
-        g = grad_dict[self.op](grad, self.child()) # in the backward sense, "child" becomes the "parent"
+        g = grad_dict[self.op](grad, self.child) # in the backward sense, "child" becomes the "parent"
         if g is not None:
-            self.child().bck(g)
+            self.child.bck(g)
         
     def __repr__(self) -> str:
         total = math.prod(self.shape)
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.child().__repr__())}"
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.child.__repr__())}"
+    
+    def format_single (self) -> str:
+        total = math.prod(self.shape)
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} ({self.child.id})"

@@ -4,19 +4,21 @@ from copy import deepcopy
 from .constant import ConstantNode
 
 class IndexNode (Node):
+    __match_args__ = ("child", "start", "end", "dim")
     def __init__(self, child:Node, start:int, end:int, dim:int):
         super().__init__([child])
         
+        self.child = child
         self.start = start
         self.end = end
         self.dim = dim
         
-        d = deepcopy(self.child().shape) 
+        d = deepcopy(self.child.shape) 
         d[self.dim] = self.end - self.start
         self.shape = d
         
     def bck(self, grad):
-        c_dim = self.child().shape        
+        c_dim = self.child.shape        
         
         first_dim = deepcopy(c_dim)
         first_dim[self.dim] = self.start
@@ -29,7 +31,10 @@ class IndexNode (Node):
         
         from autodiff import concat
         g = concat([first, grad, second], self.dim)
-        self.child().bck(g)
+        self.child.bck(g)
         
     def __repr__ (self):
-        return f"Index dim: {self.dim} from {self.start} to {self.end}\n{indent(self.child().__repr__())}"
+        return f"Index dim: {self.dim} from {self.start} to {self.end}\n{indent(self.child.__repr__())}"
+    
+    def format_single (self):
+        return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id})"

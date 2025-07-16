@@ -4,6 +4,17 @@ from typing import List
 import math
 
 class ViewNode (Node):
+    __match_args__ = ("child", "shape") 
+    def __init__(self, child:Node, shape: list[int]):
+        super().__init__([child])
+        child_dim = child.shape 
+        
+        # assert view dimensions are correct
+        assert math.prod(child_dim) == math.prod(shape), "View dimensions are incorrect"
+        
+        self.shape = shape 
+        self.child = child
+        
     def handle_minus_dim(source_dim: List[int], input_dim: List[int]) -> List[int]:
         if -1 in input_dim:
             idx = input_dim.index(-1)
@@ -25,21 +36,15 @@ class ViewNode (Node):
             input_dim[idx] = inferred_dim
 
         return list(input_dim)
-
-    def __init__(self, child:Node, target_dim: list[int]):
-        super().__init__([child])
-        child_dim = child.shape 
-        
-        # assert view dimensions are correct
-        assert math.prod(child_dim) == math.prod(target_dim), "View dimensions are incorrect"
-        
-        self.shape = target_dim 
         
     def bck(self, grad: Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not node!")
         
-        self.child().bck(grad.view(self.child().shape))
+        self.child.bck(grad.view(self.child.shape))
+
+    def format_single (self):
+        return f"{self.id} = View from {self.child.shape} to {self.shape} --> ({self.child.id})"
 
     def __repr__ (self):
-        return f"View from {self.child().shape} to {self.shape}\n{indent(self.child().__repr__())}"
+        return f"View from {self.child.shape} to {self.shape}\n{indent(self.child.__repr__())}"

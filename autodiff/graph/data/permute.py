@@ -2,6 +2,7 @@ from ...node import Node
 from ..helper import indent
 
 class PermuteNode (Node):
+    __match_args__ = ("child", "permute_to")
     def __init__(self, child:Node, permute_to: list[int]):
         super().__init__([child])
         
@@ -10,10 +11,11 @@ class PermuteNode (Node):
         for i in permute_to:
             assert i < len(child.shape), f"Invalid permute vec: {permute_to} with child shape: {child.shape}"
         
+        self.child = child
         self.permute_to = permute_to
         
         # calc shape
-        c_dim = self.child().shape
+        c_dim = self.child.shape
         dim = [0 for _ in range(len(c_dim))] 
         for i in range(len(c_dim)):
             dim[i] = c_dim[self.permute_to[i]]
@@ -27,7 +29,11 @@ class PermuteNode (Node):
         for i in range(len(self.permute_to)):
             inv_perm[self.permute_to[i]] = i
             
-        self.child().bck(grad.permute(inv_perm))
+        self.child.bck(grad.permute(inv_perm))
+        
+
+    def format_single (self):
+        return f"{self.id} = Permute {self.permute_to} --> {self.child}"
         
     def __repr__ (self):
         return f"Permute {self.permute_to}\n{indent(self.child().__repr__())}"

@@ -5,6 +5,7 @@ from ...expr import NoneExpr
 from colored import stylize, fore, style
 
 class DotProdNode (Node):
+    __match_args__ = ("left", "right")
     def __init__(self, left:Node, right:Node):
         super().__init__([left, right])
         
@@ -15,14 +16,19 @@ class DotProdNode (Node):
         # access expr 
         # must be shared + defined across nodes
         self.res_expr = NoneExpr()
-        self.shape = [self.left().shape[0], self.right().shape[1]]
+        self.left = left
+        self.right = right
+        self.shape = [self.left.shape[0], self.right.shape[1]]
         
         assert len(left_shape) == 2, "Left shape of dot prod must be 2"
         assert len(right_shape) == 2, "Right shape of dot prod must be 2"
         
     def bck (self, grad:Node):
-        self.left().bck(dot(grad, self.right().T()))
-        self.right().bck(dot(self.left().T(), grad))
+        self.left.bck(dot(grad, self.right.T()))
+        self.right.bck(dot(self.left.T(), grad))
+        
+    def format_single (self):
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
         
     def __repr__ (self):
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}Dot prod {stylize(self.left().shape, fore("yellow") + style("bold"))} x {stylize(self.right().shape, fore("yellow") + style("bold"))} --> {self.res_expr} \n{indent(self.left().__repr__())}\n{indent(self.right().__repr__())}"
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} \n{indent(self.left.__repr__())}\n{indent(self.right.__repr__())}"

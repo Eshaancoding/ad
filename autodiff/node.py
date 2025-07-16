@@ -8,7 +8,6 @@ class Node:
     # TODO: Add res expr and shape (non-phantom) to super().__init__()
     def __init__(self, children, phantom_shape=None):
         from autodiff import context
-        self.children: List[Node] = children
         self.temp_id = None # also to be filled out by opt_intermediate within execute
 
         # as we are creating nodes, we record the latest node being changed within the context
@@ -16,7 +15,7 @@ class Node:
         # and being recorded into a procedure
         if phantom_shape is None:
             self.id = context.get_id()
-            for ch in self.children:
+            for ch in children:
                 if not isinstance(ch, Node): 
                     raise TypeError("Children is not type of node!")
                 context.remove_from_dep(ch)
@@ -33,10 +32,6 @@ class Node:
     
     ############################################################
     ## Comparisons
-    def obj_eq (self, other):
-        assert isinstance(other, Node), "obj eq input invalid"
-        return self.__repr__() == other.__repr__()
-    
     def id_eq (self, other):
         assert isinstance(other, Node), "id eq input invalid"
         return self.id == other.id
@@ -52,8 +47,8 @@ class Node:
         if self.c_len() != other.c_len():
             return False
 
-        for idx, child in enumerate(self.children):
-            res = res and child.type_eq(other.c(idx))
+        for idx, child in enumerate(self.children()):
+            res = (res and child.type_eq(other.c(idx)))
         
         return res
     
@@ -77,33 +72,27 @@ class Node:
        
         return node 
     
-    # helper to access children nodes
-    def c (self, i:int):
-        return self.children[i]
-    
-    def left (self):
-        return self.children[0]
-    
-    def right (self):
-        return self.children[1]
-        
-    def child (self):
-        return self.children[0]
-    
-    def c_len (self):
-        return len(self.children)
-    
     # helper to iterateover the children of nodes
     def walk (self, f: Callable):
         res = f(self) 
        
-        for idx, child in enumerate(self.children):
-            new_child = child.walk(f)
-            if isinstance(new_child, Node):
-                self.children[idx] = new_child
+        if hasattr(res, "child"):
+            res.child = res.child.walk(f)
+        elif hasattr(res, "left") and hasattr(res, "right"):
+            res.left = res.left.walk(f)
+            res.right = res.right.walk(f)
             
         return res
     
+    # helper to get children 
+    def children (self):
+        if hasattr(self, "left") and hasattr(self, "right"):
+            return [self.left, self.right]
+        elif hasattr(self, "child"):
+            return [self.child]
+        else:
+            return []
+
     ############################################################
     ## Binary operations (+, *, -, /)
     def __add__ (self, other):

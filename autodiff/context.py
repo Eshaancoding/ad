@@ -44,7 +44,7 @@ class Block ():
             
             if hasattr(n, "block"):
                 n.block.apply_per_block(f)
-
+                
 class Context ():
     def __init__ (self):
         self.dep_nodes = []
@@ -87,5 +87,18 @@ class Context ():
     
     def __repr__(self):
         return self.procedure[0].__repr__()
+    
+    # print the graph 
+    def print_graph (self):
+        """
+        from .graph.intermediate import opt_intermediate
+        self.apply_per_node(opt_intermediate) # better printing; replace with intermediate node
+        
+        print(self.procedure[0])
+        
+        ideally.... use format_single
+        """
+
+        pass 
 
 context = Context()

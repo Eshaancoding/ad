@@ -19,19 +19,20 @@ def _internal_repl_pat (node: Node, pattern_dict: List[Tuple[Node, Callable[[Nod
                     return (r, True)
         
         # Otherwise, recurse into children
-        new_children = []
         did_r = False
-        for child in node.children:
+        for idx, child in enumerate(node.children()):
             new_child, did_replace = _internal_repl_pat(child, pattern_dict)
-            new_children.append(new_child)
-            did_r = did_r or did_replace
 
-        node = deepcopy(node)
-        node.children = new_children
+            # TODO: deprecated
+            node.children[idx] = new_child
+            did_r = did_r or did_replace
 
         # if we did not replace, then return this node (and False, not changed)
         if not did_r: 
-            return (node, False)
+            # TODO: make faster
+            # In general, I don't really like this method.......
+            # if possible... do the approach of expr/simplify? 
+            return (deepcopy(node), False)
         
         # however, if we did replace something on the computation graph, then rerun the replacement operation
         idx += 1
@@ -43,6 +44,8 @@ def _internal_repl_pat (node: Node, pattern_dict: List[Tuple[Node, Callable[[Nod
 def replace_patterns(node: Node, pattern_dict: List[Tuple[Node, Callable[[Node], Node]]]) -> Node:
     v, _ = _internal_repl_pat(node, pattern_dict)    
     return v
+
+# node
 
 # shape helper
 def calc_stride(shape: List[int]) -> List[Expression]:
@@ -64,6 +67,8 @@ def global_to_ndim(index: Expression, shape: List[int]) -> List[Expression]:
     ]
 
 def ndim_to_global(dim: List[Expression], shape: List[int]) -> Expression:
+    assert len(dim) == len(shape), f"Dimension and the shape length mismatch\ndim: {dim}, shape: {shape}"
+
     strides = calc_stride(shape)
     global_expr = Mult(dim[0], strides[0])
     for i in range(1, len(shape)):
