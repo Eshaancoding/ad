@@ -28,13 +28,7 @@ class ReduceNode (Node):
         repeat_n = self.child.shape[-1]
         self.child.bck(grad.unsqueeze(-1).broadcast(-1, repeat_n))
         
-    def __repr__(self):
-        sh = self.child.shape
-        x_dim = sh[0] 
-        y_dim = sh[1]
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} on dim: -1 {stylize(f"(Vec/X: {x_dim}, Reduce/Y: {y_dim})", fore("yellow") + style("bold"))} --> {self.res_expr}\n{indent(self.child.__repr__())}"
-    
-    def format_single (self):
+    def __repr__ (self):
         sh = self.child.shape
         x_dim = sh[0] 
         y_dim = sh[1]

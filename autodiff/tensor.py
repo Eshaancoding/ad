@@ -80,6 +80,20 @@ class Tensor (Node):
         z0 = math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2)
         return mu + z0 * sigma
     
+    @staticmethod
     def randn (shape:list[int]):
         shape = list(shape)
         return Tensor([Tensor._gen_normal_random() for _ in range(math.prod(shape))], shape)
+    
+    @staticmethod
+    def fill (val: float, shape:list[int]):
+        shape = list(shape)
+        return Tensor([val for _ in range(math.prod(shape))], shape)
+    
+    @staticmethod
+    def ones (shape: list[int]):
+        return Tensor.fill(1.0, shape)
+    
+    @staticmethod
+    def zeros (shape: list[int]):
+        return Tensor.fill(0.0, shape)

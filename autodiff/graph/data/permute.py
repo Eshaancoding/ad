@@ -32,8 +32,5 @@ class PermuteNode (Node):
         self.child.bck(grad.permute(inv_perm))
         
 
-    def format_single (self):
-        return f"{self.id} = Permute {self.permute_to} --> {self.child}"
-        
     def __repr__ (self):
-        return f"Permute {self.permute_to}\n{indent(self.child().__repr__())}"
+        return f"{self.id} = Permute {self.permute_to} --> {self.child}"

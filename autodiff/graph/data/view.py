@@ -43,8 +43,5 @@ class ViewNode (Node):
         
         self.child.bck(grad.view(self.child.shape))
 
-    def format_single (self):
-        return f"{self.id} = View from {self.child.shape} to {self.shape} --> ({self.child.id})"
-
     def __repr__ (self):
-        return f"View from {self.child.shape} to {self.shape}\n{indent(self.child.__repr__())}"
+        return f"{self.id} = View from {self.child.shape} to {self.shape} --> ({self.child.id})"

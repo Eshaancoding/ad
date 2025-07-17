@@ -23,12 +23,11 @@ class DotProdNode (Node):
         assert len(left_shape) == 2, "Left shape of dot prod must be 2"
         assert len(right_shape) == 2, "Right shape of dot prod must be 2"
         
+        assert left_shape[1] == right_shape[0], f"Dot product dim mismatch. left: {left_shape} right: {right_shape}"
+        
     def bck (self, grad:Node):
         self.left.bck(dot(grad, self.right.T()))
         self.right.bck(dot(self.left.T(), grad))
         
-    def format_single (self):
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
-        
     def __repr__ (self):
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} \n{indent(self.left.__repr__())}\n{indent(self.right.__repr__())}"
+        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} --> ({self.left.id}, {self.right.id})"

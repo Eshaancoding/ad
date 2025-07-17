@@ -1,6 +1,6 @@
 from copy import deepcopy
 import math
-from typing import List, Callable
+from typing import List, Callable, Dict
 
 class Node:
     ############################################################
@@ -62,25 +62,36 @@ class Node:
     # helper for binary ops
     def _to_node (self, node, dim: List[int]):
         if isinstance(node, int):
-            from .graph.data.constant import ConstantNode
-            return ConstantNode(float(node), dim)
+            if dim is not None:
+                from .graph.data.constant import ConstantNode
+                return ConstantNode(float(node), dim)
+            else:
+                raise TypeError("Cannot run dot product on a constant without dim (declare constant manually)")
         elif isinstance(node, float):
-            from .graph.data.constant import ConstantNode
-            return ConstantNode(node, dim)
+            if dim is not None:
+                from .graph.data.constant import ConstantNode
+                return ConstantNode(node, dim)
+            else:
+                raise TypeError("Cannot run dot product on a constant without dim (declare constant manually)")
         elif not isinstance(node, Node):
             raise TypeError(f"Invalid type {type(node)} when converting to node")
        
         return node 
     
     # helper to iterateover the children of nodes
-    def walk (self, f: Callable):
-        res = f(self) 
+    def walk (self, f: Callable, visited: Dict[int, int]={}, args=[]):
+        res = f(self, *args) 
+        visited[self.id] = 1
        
         if hasattr(res, "child"):
-            res.child = res.child.walk(f)
+            if not res.child.id in visited:
+                res.child = res.child.walk(f)
         elif hasattr(res, "left") and hasattr(res, "right"):
-            res.left = res.left.walk(f)
-            res.right = res.right.walk(f)
+            if not res.left.id in visited:
+                res.left = res.left.walk(f)
+
+            if not res.right.id in visited:
+                res.right = res.right.walk(f)
             
         return res
     
@@ -94,7 +105,7 @@ class Node:
             return []
 
     ############################################################
-    ## Binary operations (+, *, -, /)
+    ## Binary operations (+, *, -, /, @ matmul)
     def __add__ (self, other):
         from .graph.compute.binary import BinaryNode, BinaryOp
         from .graph.data.broadcast import try_broadcast 
@@ -139,6 +150,14 @@ class Node:
     
     def __neg__ (self):
         return self.__mul__(-1.0)
+    
+    def __matmul__ (self, other):
+        from .graph.compute.dotprod import DotProdNode
+        return DotProdNode(self, self._to_node(other, None))
+    
+    def __rmatmul__ (self, other):
+        from .graph.compute.dotprod import DotProdNode
+        return DotProdNode(self._to_node(other, None), self)
     
     ############################################################
     ## Comparison operations
@@ -336,3 +355,23 @@ class Node:
     def mT (self): 
         assert len(self.shape) == 3, "Can't call batch transpose on a non-3-dim tensor"
         return self.permute([0, 2, 1])
+    
+    def mean (self, dim: int):
+        return self.sum(dim) / self.shape[dim]
+    
+    def var (self, dim, correction=0):
+        a = (self - self.mean(dim).unsqueeze(dim)).pow2()
+        return a.sum(dim) / (self.shape[dim] - correction)
+    
+    ############################################################
+    ## Common Neural Network operations
+    # Note that not all NN operations are declared here
+    def sigmoid (self): 
+        return 1 / (1 + (-self).exp())
+    
+    def softmax (self, dim:int):
+        return self.exp() / self.exp().sum(dim)
+    
+    # use comparisons; much faster and easier to compute
+    def relu (self):
+        return (self > 0) * self

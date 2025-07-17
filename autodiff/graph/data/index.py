@@ -34,7 +34,4 @@ class IndexNode (Node):
         self.child.bck(g)
         
     def __repr__ (self):
-        return f"Index dim: {self.dim} from {self.start} to {self.end}\n{indent(self.child.__repr__())}"
-    
-    def format_single (self):
         return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id})"

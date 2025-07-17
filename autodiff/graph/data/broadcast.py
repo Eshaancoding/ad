@@ -26,9 +26,6 @@ class BroadcastNode (Node):
         self.child.bck(grad.sum(self.dim))
         
     def __repr__ (self) -> str:
-        return f"Broadcast dim {self.dim} to size {self.size}\n{indent(self.child.__repr__())}"
-    
-    def format_single (self) -> str:
         return f"{self.id} = Broadcast dim {self.dim} to size {self.size} --> {self.child.id}"
         
 ###########################################
@@ -60,7 +57,7 @@ def make_broadcast_node(n: Node, target_dim: list[int]) -> Node:
     ret_n = n.view([int(i) for i in n_dim])
     for i in range(len(target_dim)):
         if target_dim[i] != n_dim[i]:
-            assert n_dim[i] == 1, "Can't broadcast to target dim"
+            assert n_dim[i] == 1, f"Can't broadcast node with dim {n_dim} to target dim {target_dim}"
             ret_n = ret_n.broadcast(i, target_dim[i])
 
     return ret_n

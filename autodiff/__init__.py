@@ -32,7 +32,7 @@ def execute ():
 
     # lock procedure
     context.lock_proc = True
-
+    
     # apply graph-level optimizations
     context.apply_per_node(opt_node)
     
@@ -48,8 +48,6 @@ def execute ():
     # see if you can make fusion better here as well (test)
     
     # Send procedure to device to be executed
-
-    pass
 
 ##########################################
 ## Control flow 

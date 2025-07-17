@@ -12,10 +12,12 @@ class ConcatNode (Node):
         left_shape = left.shape
         right_shape = right.shape
         
+        
         assert len(left_shape) == len(right_shape), "Concat shape is not equal"
+        norm_dim = dim if dim >= 0 else len(left_shape) + dim
         for i in range(len(left_shape)):
-            if i == dim: continue
-            assert left_shape[i] == right_shape[i], "Concat dim mismatch"
+            if i == norm_dim: continue
+            assert left_shape[i] == right_shape[i], f"Concat dim mismatch: {left_shape} and {right_shape}"
         
         self.dim = dim
         self.left = left
@@ -39,7 +41,4 @@ class ConcatNode (Node):
         )
     
     def __repr__ (self):
-        return f"Concat at dim: {self.dim}\n{indent(self.left.__repr__())}\n{indent(self.right.__repr__())}"
-    
-    def format_single (self):
-        return f"{self.id} = Concat at dim: {self.dim}\n{indent(self.left.__repr__())} --> ({self.left.id}, {self.right.id})"
+        return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id})"

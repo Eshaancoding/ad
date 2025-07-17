@@ -52,10 +52,6 @@ class UnaryNode (Node):
         if g is not None:
             self.child.bck(g)
         
-    def __repr__(self) -> str:
-        total = math.prod(self.shape)
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.child.__repr__())}"
-    
-    def format_single (self) -> str:
+    def __repr__ (self) -> str:
         total = math.prod(self.shape)
         return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} ({self.child.id})"

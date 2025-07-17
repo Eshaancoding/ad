@@ -15,7 +15,7 @@ class BinaryNode (Node):
     def __init__(self, left: Node, right: Node, op: BinaryOp):
         super().__init__([left, right])
 
-        assert left.shape == right.shape, f"Dimensional mismatch at binary! {left.shape} and {right.shape}"
+        assert left.shape == right.shape, f"Dimensional mismatch at binary! {left} and {right}"
         self.left = left
         self.right = right
         self.op = op
@@ -36,9 +36,5 @@ class BinaryNode (Node):
             self.right.bck(grad * self.left)
 
     def __repr__ (self) -> str:
-        total = math.prod(self.shape)
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else ""}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr}\n{indent(self.left.__repr__())}\n{indent(self.right.__repr__())}"
-    
-    def format_single (self) -> str:
         total = math.prod(self.shape)
         return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} --> ({self.left.id}, {self.right.id})"

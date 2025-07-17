@@ -1,24 +1,18 @@
-from autodiff import Tensor, dot, execute, print_graph
-from autodiff.nn.sigmoid import sigmoid
+from autodiff import Tensor, execute
+from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder
 
-a = Tensor.randn([4,8])
-a_bias = Tensor.randn([8])
-b = Tensor.randn([8,16])
-b_bias = Tensor.randn([16])
+nn = TransformerEncoder(
+    num_layers=4,
+    d_model=128, 
+    num_heads=4, 
+    ff_dim=512
+)
 
-inp = Tensor.randn((2, 4))
-
-res = sigmoid(dot(inp, a) + a_bias)
-res = sigmoid(dot(res, b) + b_bias)
-
-res.backward()
-
-a = a + a.grad
-a_bias = a_bias + a_bias.grad
-b = b + b.grad
-b_bias = b_bias + b_bias.grad
+inp = Tensor.randn((4, 128))
+res = nn(inp)
+# res.backward()
 
 # execute
 execute()
 
-print_graph()
+# print_graph()
