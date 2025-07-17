@@ -8,7 +8,6 @@ class Node:
     # TODO: Add res expr and shape (non-phantom) to super().__init__()
     def __init__(self, children, phantom_shape=None):
         from autodiff import context
-        self.temp_id = None # also to be filled out by opt_intermediate within execute
 
         # as we are creating nodes, we record the latest node being changed within the context
         # as we go through the computation graph, the order of the nodes being changed will also be recorded
@@ -79,19 +78,19 @@ class Node:
         return node 
     
     # helper to iterateover the children of nodes
-    def walk (self, f: Callable, visited: Dict[int, int]={}, args=[]):
+    def walk (self, f: Callable, visited: Dict[int, int], args=[]):
         res = f(self, *args) 
         visited[self.id] = 1
        
         if hasattr(res, "child"):
-            if not res.child.id in visited:
-                res.child = res.child.walk(f)
+            if not (res.child.id in visited):
+                res.child = res.child.walk(f, visited=visited, args=args)
         elif hasattr(res, "left") and hasattr(res, "right"):
-            if not res.left.id in visited:
-                res.left = res.left.walk(f)
+            if not (res.left.id in visited):
+                res.left = res.left.walk(f, visited=visited, args=args)
 
-            if not res.right.id in visited:
-                res.right = res.right.walk(f)
+            if not (res.right.id in visited):
+                res.right = res.right.walk(f, visited=visited, args=args)
             
         return res
     

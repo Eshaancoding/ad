@@ -1,6 +1,5 @@
 from copy import deepcopy
 from ..node import Node
-from .helper import replace_patterns
 from .data.constant import ConstantNode
 
 def opt_node (node: Node) -> Node:

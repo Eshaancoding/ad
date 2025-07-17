@@ -1,6 +1,5 @@
 from ...node import Node
 from autodiff import dot
-from ..helper import indent
 from ...expr import NoneExpr
 from colored import stylize, fore, style
 
@@ -30,4 +29,4 @@ class DotProdNode (Node):
         self.right.bck(dot(self.left.T(), grad))
         
     def __repr__ (self):
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
+        return f"{self.id} = Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} --> ({self.left.id}, {self.right.id})"

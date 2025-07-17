@@ -1,10 +1,11 @@
 from copy import deepcopy
 from ..node import Node
-from .helper import replace_patterns, global_to_ndim, ndim_to_global
+from .helper import global_to_ndim, ndim_to_global
 from ..expr import *
 from ..expr.simplify import simplify_expr
 from enum import Enum
 from typing import Dict
+from .print import print_graph
 
 from ..tensor import Tensor
 from .compute.dotprod import DotProdNode
@@ -134,17 +135,20 @@ def simplify_data_cmds (node: Node) -> Node:
 def kernalize_node (node: Node) -> Node:
     fill_access_expr(node, AccessType.GLOBAL)
 
+    # print_graph(node)    
+
     ##################################################
     # Simplify data cmds by altering access expressions
-    node = node.walk(simplify_data_cmds)
+    node = node.walk(simplify_data_cmds, visited={})
     
     ##################################################
     # Simplify all exprs + globalize res expr
     def simplify_all_exprs (n:Node):
         if hasattr(n, "res_expr") and type(n.res_expr) == list:
             n.res_expr = simplify_expr(ndim_to_global(n.res_expr, n.shape))
+
         return n
             
-    node = node.walk(simplify_all_exprs)
+    node = node.walk(simplify_all_exprs, visited={})
     
     return node

@@ -1,5 +1,4 @@
 from ...node import Node
-from ..helper import indent
 from ...expr import NoneExpr
 from colored import stylize, fore
 
@@ -18,4 +17,4 @@ class ContigiousNode (Node):
         self.child.bck(grad)
         
     def __repr__ (self):
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}Contigious --> {self.res_expr} ({self.child.id})"
+        return f"{self.id} = Contigious --> {self.res_expr} ({self.child.id})"

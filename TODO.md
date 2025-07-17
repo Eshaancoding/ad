@@ -10,5 +10,6 @@
 * Fix the backward issue
 * better opt node hehe
     * constant simpl
+* better expr simplification
 
 * device

@@ -1,7 +1,7 @@
 from typing import Callable, List
 from .node import Node
 from colored import Fore, Style
-from copy import deepcopy
+from .graph.print import print_graph as g_print
 
 class Block ():
     def __init__(self):
@@ -45,11 +45,13 @@ class Block ():
             if hasattr(n, "block"):
                 n.block.apply_per_block(f)
                 
+    def print_graph (self):
+        g_print(self.nodes)
+                
 class Context ():
     def __init__ (self):
         self.dep_nodes = []
         self.id = -1
-        self.temp_id = -1
         self.procedure = [Block()] # first procedure is the main block
         self.lock_proc = False
         self.temp_to_expr = {}
@@ -74,31 +76,16 @@ class Context ():
         
     def apply_per_block (self, f: Callable[[List[Node]], None]):
         self.procedure[0].apply_per_block(f)
+
+    def print_graph (self):
+        self.procedure[0].print_graph()
        
     # node id tracking
     def get_id (self):
         self.id += 1
         return self.id
     
-    # temp id tracking
-    def get_temp_id (self):
-        self.temp_id += 1
-        return self.temp_id
-    
     def __repr__(self):
         return self.procedure[0].__repr__()
-    
-    # print the graph 
-    def print_graph (self):
-        """
-        from .graph.intermediate import opt_intermediate
-        self.apply_per_node(opt_intermediate) # better printing; replace with intermediate node
-        
-        print(self.procedure[0])
-        
-        ideally.... use format_single
-        """
-
-        pass 
 
 context = Context()

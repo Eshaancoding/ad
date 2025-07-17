@@ -1,6 +1,6 @@
 from ...node import Node
 from ...context import Block
-from ..helper import indent
+from ..print import indent
 
 #########################
 ## For node

@@ -27,7 +27,6 @@ def dot (left: Node, right: Node) -> Node:
 def execute ():
     from .graph.opt import opt_node
     from .graph.kernelize import kernalize_node
-    from .graph.intermediate import opt_intermediate
     from .graph.linearize import linearize
 
     # lock procedure

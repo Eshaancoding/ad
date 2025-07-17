@@ -3,50 +3,6 @@ from typing import Callable, Tuple, List
 from ..node import Node
 from ..expr import *
 
-# Good for debugging
-def indent(text: str, size: int = 1, prefix: str = "  ") -> str:
-    return "\n".join((prefix*size) + line if line.strip() else line for line in text.splitlines())
-
-# Good for pattern matching, ir opts, etc.
-def _internal_repl_pat (node: Node, pattern_dict: List[Tuple[Node, Callable[[Node], Node]]]) -> Tuple[Node, bool]:
-    idx = 0
-    while idx < 100:  # max reruns of the graph
-        # Check for pattern match first,
-        for pattern, replacement in pattern_dict:
-            if node.type_eq(pattern): # only match the type
-                r = replacement(node)
-                if r is not None and isinstance(r, Node):
-                    return (r, True)
-        
-        # Otherwise, recurse into children
-        did_r = False
-        for idx, child in enumerate(node.children()):
-            new_child, did_replace = _internal_repl_pat(child, pattern_dict)
-
-            # TODO: deprecated
-            node.children[idx] = new_child
-            did_r = did_r or did_replace
-
-        # if we did not replace, then return this node (and False, not changed)
-        if not did_r: 
-            # TODO: make faster
-            # In general, I don't really like this method.......
-            # if possible... do the approach of expr/simplify? 
-            return (deepcopy(node), False)
-        
-        # however, if we did replace something on the computation graph, then rerun the replacement operation
-        idx += 1
-        
-    # ideally, shouldn't go into this area of code
-    print("=================== REACHED PASSED MAX PATTERN ITERATION ============")
-    return (node, False)
-
-def replace_patterns(node: Node, pattern_dict: List[Tuple[Node, Callable[[Node], Node]]]) -> Node:
-    v, _ = _internal_repl_pat(node, pattern_dict)    
-    return v
-
-# node
-
 # shape helper
 def calc_stride(shape: List[int]) -> List[Expression]:
     n = len(shape)

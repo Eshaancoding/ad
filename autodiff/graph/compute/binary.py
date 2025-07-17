@@ -1,8 +1,6 @@
 from ...node import Node
 import math
-from ..helper import indent
 from enum import Enum
-from typing import List
 from ...expr import NoneExpr
 from colored import stylize, fore, style
 
@@ -37,4 +35,4 @@ class BinaryNode (Node):
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        return f"{stylize(f"{self.temp_id} <-- ", fore("cyan")) if self.temp_id is not None else f"{self.id} = "}{self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
+        return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
