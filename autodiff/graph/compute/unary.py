@@ -20,11 +20,7 @@ class UnaryOp (Enum):
 class UnaryNode (Node):
     __match_args__ = ("child", "op")
     def __init__(self, child:Node, op: UnaryOp):
-        super().__init__([child])
-
-        self.child = child
-        self.shape = self.child.shape
-        self.res_expr = NoneExpr()
+        super().__init__([child], self.child.shape)
         self.op = op
         
     def bck (self, grad:Node):
@@ -53,4 +49,4 @@ class UnaryNode (Node):
         
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} ({self.child.id})"
+        return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) ({self.child.id}: {self.children_exprs[0]})"

@@ -5,19 +5,18 @@ from .constant import ConstantNode
 class IndexNode (Node):
     __match_args__ = ("child", "start", "end", "dim")
     def __init__(self, child:Node, start:int, end:int, dim:int):
-        super().__init__([child])
+        # calc shape 
+        d = deepcopy(child.shape) 
+        d[self.dim] = self.end - self.start
         
-        self.child = child
+        # init
+        super().__init__([child], d)
         self.start = start
         self.end = end
         self.dim = dim
         
-        d = deepcopy(self.child.shape) 
-        d[self.dim] = self.end - self.start
-        self.shape = d
-        
     def bck(self, grad):
-        c_dim = self.child.shape        
+        c_dim = self.children_shapes[0]
         
         first_dim = deepcopy(c_dim)
         first_dim[self.dim] = self.start
@@ -33,4 +32,4 @@ class IndexNode (Node):
         self.child.bck(g)
         
     def __repr__ (self):
-        return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id})"
+        return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id}: {self.children_exprs[0]})"

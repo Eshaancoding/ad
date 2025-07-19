@@ -28,23 +28,6 @@ class Block ():
             st += "\n"
         return st
     
-    def apply_per_node (self, f: Callable[[Node], None]):
-        for idx in range(len(self.nodes)):
-            n = self.nodes[idx]
-            if hasattr(n, "block"):
-                n.block.apply_per_node(f)
-            else:
-                self.nodes[idx] = f(self.nodes[idx])
-                
-    def apply_per_block (self, f: Callable[[List[Node]], Node]):
-        self.nodes = f(self.nodes)
-        
-        for idx in range(len(self.nodes)):
-            n = self.nodes[idx]
-            
-            if hasattr(n, "block"):
-                n.block.apply_per_block(f)
-                
     def print_graph (self):
         g_print(self.nodes)
                 
@@ -71,12 +54,6 @@ class Context ():
         assert len(self.procedure) > 1, "Attempt to pop main procedure!"
         return self.procedure.pop(-1)
         
-    def apply_per_node (self, f: Callable[[Node], None]):
-        self.procedure[0].apply_per_node(f)
-        
-    def apply_per_block (self, f: Callable[[List[Node]], None]):
-        self.procedure[0].apply_per_block(f)
-
     def print_graph (self):
         self.procedure[0].print_graph()
        
@@ -87,5 +64,8 @@ class Context ():
     
     def __repr__(self):
         return self.procedure[0].__repr__()
+    
+    def main_proc (self):
+        return self.procedure[0]
 
 context = Context()

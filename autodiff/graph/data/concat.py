@@ -5,27 +5,21 @@ from .index import IndexNode
 class ConcatNode (Node):
     __match_args__ = ("left", "right", "dim")
     def __init__(self, left:Node, right:Node, dim: int):
-        super().__init__([left, right])
         
         # assert shape
-        left_shape = left.shape
-        right_shape = right.shape
-        
-        
-        assert len(left_shape) == len(right_shape), "Concat shape is not equal"
-        norm_dim = dim if dim >= 0 else len(left_shape) + dim
-        for i in range(len(left_shape)):
+        assert len(left.shape) == len(right.shape), "Concat shape is not equal"
+        norm_dim = dim if dim >= 0 else len(left.shape) + dim
+        for i in range(len(left.shape)):
             if i == norm_dim: continue
-            assert left_shape[i] == right_shape[i], f"Concat dim mismatch: {left_shape} and {right_shape}"
+            assert left.shape[i] == right.shape[i], f"Concat dim mismatch: {left.shape} and {right.shape}"
         
-        self.dim = dim
-        self.left = left
-        self.right = right
         
         # calc shape
         d = deepcopy(self.left.shape)
         d[self.dim] += self.right.shape[self.dim]
-        self.shape = d
+        
+        super().__init__([left, right], d)
+        self.dim = dim
     
     def bck (self, grad:Node):
         l_dim = self.left.shape[self.dim]

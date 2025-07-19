@@ -5,14 +5,9 @@ import math
 class ViewNode (Node):
     __match_args__ = ("child", "shape") 
     def __init__(self, child:Node, shape: list[int]):
-        super().__init__([child])
-        child_dim = child.shape 
+        assert math.prod(child.shape) == math.prod(shape), "View dimensions are incorrect"
         
-        # assert view dimensions are correct
-        assert math.prod(child_dim) == math.prod(shape), "View dimensions are incorrect"
-        
-        self.shape = shape 
-        self.child = child
+        super().__init__([child], shape)
         
     def handle_minus_dim(source_dim: List[int], input_dim: List[int]) -> List[int]:
         if -1 in input_dim:
@@ -40,7 +35,7 @@ class ViewNode (Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not node!")
         
-        self.child.bck(grad.view(self.child.shape))
+        self.child.bck(grad.view(self.children_shapes[0]))
 
     def __repr__ (self):
-        return f"{self.id} = View from {self.child.shape} to {self.shape} --> ({self.child.id})"
+        return f"{self.id} = View from {self.children_shapes[0]} to {self.shape} --> ({self.child.id}: {self.children_exprs[0]})"

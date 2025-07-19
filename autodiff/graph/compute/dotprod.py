@@ -6,27 +6,23 @@ from colored import stylize, fore, style
 class DotProdNode (Node):
     __match_args__ = ("left", "right")
     def __init__(self, left:Node, right:Node):
-        super().__init__([left, right])
-        
+        # NOTE: If you have any other args in __match_args__, make sure to define them
         # assert shape
-        left_shape = left.shape
-        right_shape = right.shape
+        assert len(left.shape) == 2, "Left shape of dot prod must be 2"
+        assert len(right.shape) == 2, "Right shape of dot prod must be 2"
+
+        assert left.shape[1] == right.shape[0], \
+            f"Dot product dim mismatch. left: {left.shape} right: {right.shape}"
         
-        # access expr 
-        # must be shared + defined across nodes
-        self.res_expr = NoneExpr()
-        self.left = left
-        self.right = right
-        self.shape = [self.left.shape[0], self.right.shape[1]]
-        
-        assert len(left_shape) == 2, "Left shape of dot prod must be 2"
-        assert len(right_shape) == 2, "Right shape of dot prod must be 2"
-        
-        assert left_shape[1] == right_shape[0], f"Dot product dim mismatch. left: {left_shape} right: {right_shape}"
+        super().__init__([left, right], shape=[self.left.shape[0], self.right.shape[1]])
         
     def bck (self, grad:Node):
         self.left.bck(dot(grad, self.right.T()))
         self.right.bck(dot(self.left.T(), grad))
         
     def __repr__ (self):
-        return f"{self.id} = Dot prod {stylize(self.left.shape, fore("yellow") + style("bold"))} x {stylize(self.right.shape, fore("yellow") + style("bold"))} --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
+        l_shape = self.children_shapes[0]
+        l_expr = self.children_exprs[0]
+        r_shape = self.children_shapes[1]
+        r_expr = self.children_exprs[1]
+        return f"{self.id} = Dot prod {stylize(l_shape, fore("yellow") + style("bold"))} x {stylize(r_shape, fore("yellow") + style("bold"))} --> ({self.left.id}: {l_expr}, {self.right.id}: {r_expr})"

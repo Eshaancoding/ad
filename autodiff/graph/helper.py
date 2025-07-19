@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Callable, Tuple, List
+from typing import Callable, Tuple, List, Dict
 from ..node import Node
 from ..expr import *
 
@@ -36,3 +36,33 @@ def ndim_to_global(dim: List[Expression], shape: List[int]) -> Expression:
             )
         )
     return global_expr
+
+def _walk_node (n: Node, visited: Dict[int, int], f: Callable, **kwargs) -> Node: 
+    res = f(n, visited, **kwargs)    
+    visited[n.id] = 1
+    if not isinstance(res, Node):
+        res = n
+
+    if hasattr(res, "child"):
+        if not (res.child.id in visited):
+            res.child = _walk_node(res.child, visited, f, **kwargs)
+    elif hasattr(res, "left") and hasattr(res, "right"):
+        if not (res.left.id in visited):
+            res.left = _walk_node(res.left, visited, f, **kwargs)
+        if not (res.right.id in visited):
+            res.right = _walk_node(res.right, visited, f, **kwargs)
+
+    return res
+
+def walk_graph (n: Node, f: Callable, **kwargs):
+    if isinstance(n, list) and len(n) > 0 and isinstance(n[0], Node):
+        new_list = []
+        visited = {}
+        for node in n:
+            node = _walk_node(node, visited, f, **kwargs)
+            new_list.append(node)
+        return new_list
+    elif isinstance(n, Node):
+        return _walk_node(n, {}, f, **kwargs)
+    else:
+        raise TypeError(f"Invalid type {type(n)} in format graph")

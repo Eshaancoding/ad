@@ -1,12 +1,13 @@
 from copy import deepcopy
 from ..node import Node
-from .helper import global_to_ndim, ndim_to_global
+from .helper import global_to_ndim, ndim_to_global, walk_graph
 from ..expr import *
 from ..expr.simplify import simplify_expr
-from enum import Enum
-from typing import Dict
 from .print import print_graph
+from enum import Enum
+from typing import Dict, Tuple
 
+from ..context import Context
 from ..tensor import Tensor
 from .compute.dotprod import DotProdNode
 from .compute.reduce import ReduceNode
@@ -15,8 +16,6 @@ from .compute.unary import UnaryNode
 from .data.contigious import ContigiousNode
 from .data.constant import ConstantNode
 from .data import *
-
-from ..phantom import *
 
 class AccessType (Enum):
     GLOBAL=1 # for elw/unary
@@ -29,49 +28,51 @@ def make_access_type (access_type: AccessType, shape: list[int]):
         case AccessType.GLOBAL:
             return global_to_ndim(Global(), shape)
 
-def fill_access_expr (node: Node, access_type: AccessType, visited: Dict[int, int] = {}):
+def fill_access_expr (node: Node, visited: Dict[int, int], access_type: AccessType):
+
     if node.id in visited:
         return
-
+    
     match node:
         case DotProdNode() as n:
             n.res_expr = make_access_type(access_type, n.shape)
             visited[node.id] = 1
-            fill_access_expr(n.left, AccessType.XY, visited)
-            fill_access_expr(n.right, AccessType.XY, visited)
+            fill_access_expr(n.left, visited, AccessType.XY)
+            fill_access_expr(n.right, visited, AccessType.XY)
         case ReduceNode() as n:
             n.res_expr = make_access_type(access_type, n.shape)
             visited[node.id] = 1
-            fill_access_expr(n.child, AccessType.XY, visited)
+            fill_access_expr(n.child, visited, AccessType.XY)
         case BinaryNode() as n:
             n.res_expr = make_access_type(access_type, n.shape)
             visited[node.id] = 1
-            fill_access_expr(n.left, AccessType.GLOBAL, visited)
-            fill_access_expr(n.right, AccessType.GLOBAL, visited)
+            fill_access_expr(n.left, visited, AccessType.GLOBAL)
+            fill_access_expr(n.right, visited, AccessType.GLOBAL)
         case UnaryNode() as n:
             n.res_expr = make_access_type(access_type, n.shape)
             visited[node.id] = 1
-            fill_access_expr(n.child, AccessType.GLOBAL, visited)
+            fill_access_expr(n.child, visited, AccessType.GLOBAL)
         case ContigiousNode() as n:
             n.res_expr = make_access_type(access_type, n.shape)
             visited[node.id] = 1
-            fill_access_expr(n.child, AccessType.GLOBAL, visited)
+            fill_access_expr(n.child, visited, AccessType.GLOBAL)
         case Tensor() as n:
             n.res_expr = make_access_type(access_type, n.shape) 
         case ConstantNode() as n:
             pass
         case _ as n:
-            # TODO: Convert this function to walk?
             if hasattr(n, "left"): 
-                fill_access_expr(n.left, access_type)
+                fill_access_expr(n.left, visited, access_type)
                 visited[n.left.id] = 1
-                fill_access_expr(n.right, access_type)
+                fill_access_expr(n.right, visited, access_type)
                 visited[n.right.id] = 1
             else:
-                fill_access_expr(n.child, access_type)
+                fill_access_expr(n.child, visited, access_type)
                 visited[n.child.id] = 1
 
-def simplify_data_cmds (node: Node) -> Node:
+def simplify_data_cmds (node: Node, visited: dict) -> Node:
+    visited[node.id] = 1 # ensure we add to visited
+
     # TODO: Fix constant simplification!!
     if isinstance(node, ConstantNode):
         return node
@@ -81,7 +82,7 @@ def simplify_data_cmds (node: Node) -> Node:
 
     match node:
         case PermuteNode(_ as child, _ as permute_to):
-            child = simplify_data_cmds(child)
+            child = simplify_data_cmds(child, visited)
             res_expr = child.res_expr            
 
             new_res_expr = [Val(Constant(0)) for _ in range(len(res_expr))]
@@ -95,7 +96,7 @@ def simplify_data_cmds (node: Node) -> Node:
             return child
         
         case ViewNode(_ as child, _ as target_dim):
-            child = simplify_data_cmds(child)
+            child = simplify_data_cmds(child, visited)
             res_expr = child.res_expr            
             orig_dim = child.shape
 
@@ -109,7 +110,7 @@ def simplify_data_cmds (node: Node) -> Node:
             return child    
 
         case BroadcastNode(_ as child, _ as dim, _ as size):
-            child = simplify_data_cmds(child)
+            child = simplify_data_cmds(child, visited)
             res_expr = child.res_expr            
 
             res_expr[dim] = Val(Constant(0))
@@ -118,7 +119,7 @@ def simplify_data_cmds (node: Node) -> Node:
             return child
         
         case IndexNode(_ as child, _ as start, _ as end, _ as dim):
-            child = simplify_data_cmds(child)
+            child = simplify_data_cmds(child, visited)
             res_expr = child.res_expr            
 
             res_expr[dim] = Add(res_expr[dim], Val(Constant(start)))
@@ -132,23 +133,14 @@ def simplify_data_cmds (node: Node) -> Node:
     return node
             
 
-def kernalize_node (node: Node) -> Node:
-    fill_access_expr(node, AccessType.GLOBAL)
-
-    # print_graph(node)    
-
-    ##################################################
-    # Simplify data cmds by altering access expressions
-    node = node.walk(simplify_data_cmds, visited={})
-    
-    ##################################################
-    # Simplify all exprs + globalize res expr
-    def simplify_all_exprs (n:Node):
-        if hasattr(n, "res_expr") and type(n.res_expr) == list:
-            n.res_expr = simplify_expr(ndim_to_global(n.res_expr, n.shape))
-
+def kernalize (context: Context) -> Tuple[Node, Dict]:
+    def simplify_all_exprs (n:Node, visited):
+        if not n.id in visited:
+            if hasattr(n, "res_expr") and type(n.res_expr) == list:
+                n.res_expr = simplify_expr(ndim_to_global(n.res_expr, n.shape))
         return n
-            
-    node = node.walk(simplify_all_exprs, visited={})
-    
-    return node
+
+    for idx in range(len(context.procedure)):
+        context.procedure[idx].nodes = walk_graph(context.procedure[idx].nodes, fill_access_expr, access_type=AccessType.GLOBAL)
+        context.procedure[idx].nodes = walk_graph(context.procedure[idx].nodes, simplify_data_cmds) 
+        context.procedure[idx].nodes = walk_graph(context.procedure[idx].nodes, simplify_all_exprs)

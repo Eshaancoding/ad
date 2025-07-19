@@ -5,18 +5,18 @@ import math
 from .expr import NoneExpr
 
 class Tensor (Node):
-    def __init__(self, data: any, dim: Optional[List[int]]):
-        super().__init__([])
+    __match_args__ = ("data", "shape")
+    def __init__(self, data: any, shape: Optional[List[int]]):
         
-        if dim is not None:
-            self.shape = dim 
+        sh = None
+        if shape is not None:
+            sh = shape 
             self.data = data 
         else: 
-            self.shape = list(Tensor._get_shape_and_validate(data))
+            sh = list(Tensor._get_shape_and_validate(data))
             self.data = Tensor._flatten(data)
 
-        self.grad = None
-        self.res_expr = NoneExpr() # access expression. Not filled until kernalize
+        super().__init__([], sh)
 
     def _get_shape_and_validate(data):
         if not isinstance(data, list):
@@ -68,10 +68,7 @@ class Tensor (Node):
         return self.grad
     
     def __repr__ (self) -> str:
-        return f"Tensor(id: {self.id}, access: {self.res_expr})"
-    
-    def format_single (self) -> str:
-        return f"Tensor(id: {self.id}, access: {self.res_expr})"
+        return f"Tensor(id: {self.id})"
     
     def _gen_normal_random(mu=0, sigma=1):
         # Box-Muller transform

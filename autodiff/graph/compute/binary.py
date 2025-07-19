@@ -11,16 +11,10 @@ class BinaryOp (Enum):
 class BinaryNode (Node):
     __match_args__ = ("left", "right", "op")
     def __init__(self, left: Node, right: Node, op: BinaryOp):
-        super().__init__([left, right])
-
         assert left.shape == right.shape, f"Dimensional mismatch at binary! {left} and {right}"
-        self.left = left
-        self.right = right
+
+        super().__init__([left, right], left.shape)
         self.op = op
-        
-        # must be shared + defined across nodes (TODO: move to super().__init__())
-        self.res_expr = NoneExpr()
-        self.shape = self.left.shape 
     
     def bck (self, grad:Node):
         if not isinstance(grad, Node):
@@ -35,4 +29,4 @@ class BinaryNode (Node):
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> {self.res_expr} --> ({self.left.id}, {self.right.id})"
+        return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> ({self.left.id}: {self.children_exprs[0]}, {self.right.id}: {self.children_exprs[1]})"

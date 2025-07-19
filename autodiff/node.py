@@ -1,27 +1,45 @@
 from copy import deepcopy
 import math
+from .expr import Expression, NoneExpr
 from typing import List, Callable, Dict
 
 class Node:
     ############################################################
     ## Derived methods/init
-    # TODO: Add res expr and shape (non-phantom) to super().__init__()
-    def __init__(self, children, phantom_shape=None):
+    # TODO: Add res expr and shape to super().__init__()
+    def __init__(self, children, shape:List[int]):
         from autodiff import context
 
-        # as we are creating nodes, we record the latest node being changed within the context
-        # as we go through the computation graph, the order of the nodes being changed will also be recorded
-        # and being recorded into a procedure
-        if phantom_shape is None:
-            self.id = context.get_id()
-            for ch in children:
-                if not isinstance(ch, Node): 
-                    raise TypeError("Children is not type of node!")
-                context.remove_from_dep(ch)
+        self.id = context.get_id()
+        self.children_exprs: List[Expression] = []
+        self.children_shapes: List[Expression] = []
+        for ch in children:
+            if not isinstance(ch, Node): 
+                raise TypeError("Children is not type of node!")
+            
+            # record child shapes + set up child_exprs 
+            self.children_exprs.append(NoneExpr) # will be filled out at kernalize
+            
+            # this shape could change (especially at kernalize). Save the deepcopy of shape and use this shape
+            # One tensor can be represented in multiple dimensions/views (depends on the children exprs)
+            self.children_shapes.append(deepcopy(children.shape)) 
 
-            context.add_to_dep(self)
+            # as we are creating nodes, we record the latest node being changed within the context
+            # as we go through the computation graph, the order of the nodes being changed will also be recorded
+            # and being recorded into a procedure
+            context.remove_from_dep(ch)
+        context.add_to_dep(self)
+
+        # set the self.left, self.right, or self.child at children
+        if len(children) == 2:
+            self.left = children[0]
+            self.right = children[1]
+        elif len(children) == 1:
+            self.child = children[0]
         else:
-            self.shape = phantom_shape
+            raise TypeError("Children length is invalid (expected one or two)")
+        
+        self.shape = shape
         
     def bck (self, grad):
         raise NotImplementedError
@@ -34,22 +52,6 @@ class Node:
     def id_eq (self, other):
         assert isinstance(other, Node), "id eq input invalid"
         return self.id == other.id
-    
-    def type_eq (self, other): 
-        from .phantom import PhantomNode
-        if isinstance(other, PhantomNode):
-            return other.phantom_type_eq(self)
-
-        assert isinstance(other, Node), "type eq input invalid"
-        
-        res = (type(self) == type(other)) 
-        if self.c_len() != other.c_len():
-            return False
-
-        for idx, child in enumerate(self.children()):
-            res = (res and child.type_eq(other.c(idx)))
-        
-        return res
     
     ############################################################
     ## Other methods

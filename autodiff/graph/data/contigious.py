@@ -7,14 +7,10 @@ from colored import stylize, fore
 class ContigiousNode (Node):
     __match_args__ = ("child")
     def __init__(self, child:Node):
-        super().__init__([child])
-
-        self.child = child
-        self.res_expr = NoneExpr()
-        self.shape = self.child.shape
+        super().__init__([child], self.child.shape)
         
     def bck(self, grad:Node):
         self.child.bck(grad)
         
     def __repr__ (self):
-        return f"{self.id} = Contigious --> {self.res_expr} ({self.child.id})"
+        return f"{self.id} = Contigious ({self.child.id}: {self.children_exprs[0]})"
