@@ -20,7 +20,7 @@ class UnaryOp (Enum):
 class UnaryNode (Node):
     __match_args__ = ("child", "op")
     def __init__(self, child:Node, op: UnaryOp):
-        super().__init__([child], self.child.shape)
+        super().__init__([child], child.shape)
         self.op = op
         
     def bck (self, grad:Node):

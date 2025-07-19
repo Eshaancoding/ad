@@ -6,16 +6,14 @@ from copy import deepcopy
 class BroadcastNode (Node):
     __match_args__ = ("child", "dim", "size")
     def __init__ (self, child: Node, dim: int, size: int):
-        
-        self.dim = dim
-        self.size = size 
-        
         # data cmds doesn't implement the res_expr 
         # however, does implement shape
-        p = deepcopy(self.child.shape)
-        p[self.dim] = self.size
+        p = deepcopy(child.shape)
+        p[dim] = size
         
         super().__init__([child], p)
+        self.dim = dim
+        self.size = size 
         
     def bck (self, grad:Node):
         if not isinstance (grad, Node):
@@ -24,7 +22,7 @@ class BroadcastNode (Node):
         self.child.bck(grad.sum(self.dim))
         
     def __repr__ (self) -> str:
-        return f"{self.id} = Broadcast dim {self.dim} to size {self.size} --> {self.child.id}: {self.children_exprs[0]}"
+        return f"{self.id} = Broadcast dim {self.dim} to size {self.size} --> {self.child.id}"
         
 ###########################################
 ## Functions to automatically create broadcast node when needed

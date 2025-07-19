@@ -8,28 +8,28 @@ from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder
 #     ff_dim=512
 # )
 
-# nn = Sequential(
-#     Linear(128, 512),
-#     Sigmoid(),
-#     Linear(512, 256),
-#     Sigmoid()
-# )
+nn = Sequential(
+    Linear(128, 512),
+    Sigmoid(),
+    Linear(512, 256),
+    Sigmoid()
+)
 
-# inp = Tensor.randn((4, 128))
-# res = nn(inp)
-# res.backward()
+inp = Tensor.randn((4, 128))
+res = nn(inp)
+res.backward()
 
+"""
 x = Tensor.randn((4, 128))
 x2 = Tensor.randn((4, 64))
 
 w1 = Tensor.randn((128, 64))
 
 res_one = x @ w1 
-res_two = x2 @ w1.T()
-
+res_two = x2 @ w1.T().T().T()
+"""
 
 # execute
 execute()
 
 print_graph()
-

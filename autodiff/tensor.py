@@ -7,7 +7,6 @@ from .expr import NoneExpr
 class Tensor (Node):
     __match_args__ = ("data", "shape")
     def __init__(self, data: any, shape: Optional[List[int]]):
-        
         sh = None
         if shape is not None:
             sh = shape 
@@ -17,6 +16,7 @@ class Tensor (Node):
             self.data = Tensor._flatten(data)
 
         super().__init__([], sh)
+        self.grad_tensor = None 
 
     def _get_shape_and_validate(data):
         if not isinstance(data, list):
@@ -56,19 +56,19 @@ class Tensor (Node):
         if not isinstance(grad, Node):
             raise TypeError("Backward on tensor grad is not tensoor")
             
-        if self.grad is None:
-            self.grad = grad
+        if self.grad_tensor is None:
+            self.grad_tensor = grad
         else:
-            self.grad = self.grad + grad  
+            self.grad_tensor = self.grad_tensor + grad  
             
     def grad (self):
-        if self.grad is None:
+        if self.grad_tensor is None:
             raise RuntimeError("Gradient on tensor is none! Make sure you call .backward()")        
 
-        return self.grad
+        return self.grad_tensor
     
     def __repr__ (self) -> str:
-        return f"Tensor(id: {self.id})"
+        return f"Tensor(id: {self.id}, orig_shape: {self.shape})"
     
     def _gen_normal_random(mu=0, sigma=1):
         # Box-Muller transform

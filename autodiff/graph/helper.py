@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Callable, Tuple, List, Dict
 from ..node import Node
 from ..expr import *
+from ..graph.data import *
 
 # shape helper
 def calc_stride(shape: List[int]) -> List[Expression]:
@@ -37,6 +38,26 @@ def ndim_to_global(dim: List[Expression], shape: List[int]) -> Expression:
         )
     return global_expr
 
+def ndim_change_datacmds (dim: List[Expression], data_cmds: List[Node]):
+    for data_cmd in reversed(data_cmds):
+        match data_cmd:
+            case PermuteNode(_, _ as permute_to):
+                new_dim = [Val(Constant(0)) for _ in range(len(dim))]
+                for i in range(len(dim)):
+                    new_dim[i] = deepcopy(dim[permute_to[i]])
+                dim = new_dim 
+            
+            case ViewNode(_, _ as target_dim) as n:
+                dim = global_to_ndim(ndim_to_global(dim, n.children_shapes[0]), target_dim)
+                
+            case BroadcastNode(_, _ as d, _):
+                dim[d] = Val(Constant(0))
+                
+            case IndexNode(_, _ as start, _, _ as d):
+                dim[d] = Add(dim[d], Val(Constant(start)))
+                
+    return dim
+
 def _walk_node (n: Node, visited: Dict[int, int], f: Callable, **kwargs) -> Node: 
     res = f(n, visited, **kwargs)    
     visited[n.id] = 1
@@ -55,6 +76,10 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, **kwargs) -> Node
     return res
 
 def walk_graph (n: Node, f: Callable, **kwargs):
+    """
+    NOTE: If you are calling func within func at walk_graph, then make sure you have visited gaurd and insert node.id at visited
+    """
+    
     if isinstance(n, list) and len(n) > 0 and isinstance(n[0], Node):
         new_list = []
         visited = {}

@@ -14,7 +14,7 @@ class DotProdNode (Node):
         assert left.shape[1] == right.shape[0], \
             f"Dot product dim mismatch. left: {left.shape} right: {right.shape}"
         
-        super().__init__([left, right], shape=[self.left.shape[0], self.right.shape[1]])
+        super().__init__([left, right], shape=[left.shape[0], right.shape[1]])
         
     def bck (self, grad:Node):
         self.left.bck(dot(grad, self.right.T()))

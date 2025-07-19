@@ -1,7 +1,7 @@
 # TODO
 
 * ~~Multihead attention~~
-* Fix the kernalize shape issue
+* ~~Fix the kernalize shape issue~~
 * ~~ability to print nodes in the graphical format.~~
 
 * Fusion

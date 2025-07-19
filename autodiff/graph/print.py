@@ -33,7 +33,7 @@ def format_graph (n, level):
             res += stylize(str(idx), fore("green")) + ": "
             res += formatted_str
     elif isinstance(n, Node):
-        res, _ = format_node(n, {})
+        res, _ = format_node(n, {}, level)
     else:
         raise TypeError(f"Invalid type {type(n)} in format graph")
     return res

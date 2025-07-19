@@ -12,17 +12,21 @@ class Node:
 
         self.id = context.get_id()
         self.children_exprs: List[Expression] = []
-        self.children_shapes: List[Expression] = []
+        self.children_shapes: List[List[int]] = []
+        self.children_datacmds: List[List[Node]] = [] # will be only datacmds nodes
         for ch in children:
             if not isinstance(ch, Node): 
                 raise TypeError("Children is not type of node!")
             
             # record child shapes + set up child_exprs 
-            self.children_exprs.append(NoneExpr) # will be filled out at kernalize
+            self.children_exprs.append(NoneExpr()) # will be filled out at kernalize
             
             # this shape could change (especially at kernalize). Save the deepcopy of shape and use this shape
             # One tensor can be represented in multiple dimensions/views (depends on the children exprs)
-            self.children_shapes.append(deepcopy(children.shape)) 
+            self.children_shapes.append(deepcopy(ch.shape)) 
+            
+            # fill in children datacmds. This is an internal variable needed at kernalize
+            self.children_datacmds.append([])
 
             # as we are creating nodes, we record the latest node being changed within the context
             # as we go through the computation graph, the order of the nodes being changed will also be recorded
@@ -31,12 +35,12 @@ class Node:
         context.add_to_dep(self)
 
         # set the self.left, self.right, or self.child at children
-        if len(children) == 2:
+        if len(children) == 1:
+            self.child = children[0]
+        elif len(children) == 2:
             self.left = children[0]
             self.right = children[1]
-        elif len(children) == 1:
-            self.child = children[0]
-        else:
+        elif len(children) != 0:
             raise TypeError("Children length is invalid (expected one or two)")
         
         self.shape = shape
@@ -75,7 +79,7 @@ class Node:
             else:
                 raise TypeError("Cannot run dot product on a constant without dim (declare constant manually)")
         elif not isinstance(node, Node):
-            raise TypeError(f"Invalid type {type(node)} when converting to node")
+            raise TypeError(f"Invalid type {type(node)} when converting to node {node}")
        
         return node 
     

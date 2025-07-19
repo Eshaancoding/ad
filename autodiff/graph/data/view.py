@@ -38,4 +38,4 @@ class ViewNode (Node):
         self.child.bck(grad.view(self.children_shapes[0]))
 
     def __repr__ (self):
-        return f"{self.id} = View from {self.children_shapes[0]} to {self.shape} --> ({self.child.id}: {self.children_exprs[0]})"
+        return f"{self.id} = View from {self.children_shapes[0]} to {self.shape} --> ({self.child.id})"

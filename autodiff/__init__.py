@@ -26,20 +26,20 @@ def dot (left: Node, right: Node) -> Node:
 
 def execute ():
     from .graph.opt import opt_node
-    from .graph.kernelize import kernalize
+    # from .graph.kernelize import kernalize
+    from .graph.kernalize_two import kernalize
     from .graph.linearize import linearize
+    from .graph.kernalize_two import kernalize
 
     # lock procedure
     context.lock_proc = True
-    
-    print_graph()
     
     # apply graph-level optimizations
     # context.apply_per_node(opt_node)
     
     # Kernalize the graph; remove the data cmds and just use access expressions
     kernalize(context)
-    
+
     # Linearize + fusion
     linearize(context) 
     

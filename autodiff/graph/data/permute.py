@@ -9,10 +9,10 @@ class PermuteNode (Node):
             assert i < len(child.shape), f"Invalid permute vec: {permute_to} with child shape: {child.shape}"
         
         # calc shape
-        c_dim = self.child.shape
+        c_dim = child.shape
         dim = [0 for _ in range(len(c_dim))] 
         for i in range(len(c_dim)):
-            dim[i] = c_dim[self.permute_to[i]]
+            dim[i] = c_dim[permute_to[i]]
 
         # init node
         super().__init__([child], dim)
@@ -30,4 +30,4 @@ class PermuteNode (Node):
         
 
     def __repr__ (self):
-        return f"{self.id} = Permute {self.permute_to} --> {self.child}: {self.children_exprs[0]}"
+        return f"{self.id} = Permute {self.permute_to} --> {self.child.id}"
