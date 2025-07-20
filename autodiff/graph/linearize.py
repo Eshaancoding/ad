@@ -1,13 +1,16 @@
+from pprint import pprint
 from ..context import Context
 from ..node import Node
 from toposort import toposort
-from typing import Dict
+from typing import Dict, List
 from .helper import walk_graph
+from .fusion import FuseBase, FuseType, ElwFuse, DPElwFuse, ReduceElwFuse, Procedure
+from .fusion.helper import print_list
+from .fusion.fuse_across import fuse_across
+from .fusion.fuse_within import fuse_within 
 
 def linearize (context: Context):
-    
     for proc in context.procedure:
-
         g_dep = {}
         id_to_node = {}
 
@@ -31,9 +34,43 @@ def linearize (context: Context):
         
         walk_graph(proc.nodes, test_toposort)
         
-        res = list(toposort(g_dep))
+        toposort_res = list(toposort(g_dep))
         
-        for layer in res:
-            print("\n=================== LAYER ====================")
-            for i in layer:
-                print(id_to_node[i])
+        # Fuse!
+        fusion_ops: List[FuseBase] = [
+            DPElwFuse,
+            ReduceElwFuse,
+            ElwFuse,
+            Procedure
+        ]
+        
+        def fn_fuse (toposort_res, id_to_node, context, op, fuse_type):
+            # apply fuse operator until it can't
+            ch = 1
+            itr = 0
+            while ch > 0:
+                if fuse_type == FuseType.ACROSS_LAYER:
+                    toposort_res, ch = fuse_across(context, id_to_node, toposort_res, op)
+                elif fuse_type == FuseType.WITHIN_LAYER:
+                    toposort_res, ch = fuse_within(context, id_to_node, toposort_res, op)
+
+                if itr >= 1000: # iter stop
+                    print("FUSE OPERATION ITERATION PEAKED!!!") # alert the user; this shouldn't happen in most scenario
+                    break
+
+            return toposort_res
+                
+        for op in fusion_ops:            
+            if op().type == FuseType.ALL:
+                toposort_res = fn_fuse(toposort_res, id_to_node, context, op, FuseType.WITHIN_LAYER) 
+                toposort_res = fn_fuse(toposort_res, id_to_node, context, op, FuseType.ACROSS_LAYER) 
+            else:
+                toposort_res = fn_fuse(toposort_res, id_to_node, context, op, op().type) 
+
+        try:
+            proc = list(id_to_node.values())[0].nodes
+            for n in proc:
+                print(n)
+        except:
+            print_list(id_to_node, toposort_res)
+            raise Exception("Can't ret proc")

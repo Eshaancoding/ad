@@ -7,7 +7,7 @@ class IndexNode (Node):
     def __init__(self, child:Node, start:int, end:int, dim:int):
         # calc shape 
         d = deepcopy(child.shape) 
-        d[self.dim] = self.end - self.start
+        d[dim] = end - start
         
         # init
         super().__init__([child], d)

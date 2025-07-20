@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Callable, Tuple, List, Dict
+from typing import Callable, List, Dict
 from ..node import Node
 from ..expr import *
 from ..graph.data import *
@@ -91,3 +91,4 @@ def walk_graph (n: Node, f: Callable, **kwargs):
         return _walk_node(n, {}, f, **kwargs)
     else:
         raise TypeError(f"Invalid type {type(n)} in format graph")
+    

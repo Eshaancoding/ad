@@ -34,6 +34,7 @@ def execute ():
     # lock procedure
     context.lock_proc = True
     
+    
     # apply graph-level optimizations
     # context.apply_per_node(opt_node)
     

@@ -1,6 +1,5 @@
 from ...node import Node
 from autodiff import dot
-from ...expr import NoneExpr
 from colored import stylize, fore, style
 
 class DotProdNode (Node):

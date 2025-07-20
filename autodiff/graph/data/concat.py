@@ -15,8 +15,8 @@ class ConcatNode (Node):
         
         
         # calc shape
-        d = deepcopy(self.left.shape)
-        d[self.dim] += self.right.shape[self.dim]
+        d = deepcopy(left.shape)
+        d[dim] += right.shape[dim]
         
         super().__init__([left, right], d)
         self.dim = dim

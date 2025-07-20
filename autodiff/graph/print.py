@@ -19,7 +19,7 @@ def format_node (n: Node, visited: Dict[int, int], level):
             p, visited = format_node(child, visited, level-1 if isinstance(level, int) else None)
             visited[child.id] = 1
         else:
-            p = stylize(f"Intermediate {child.id}", fore("cyan"))
+            p = stylize(f"{child.id} = Intermediate", fore("cyan"))
         s += indent(p)
         s += "\n"
     return s, visited

@@ -11,7 +11,7 @@ class BinaryOp (Enum):
 class BinaryNode (Node):
     __match_args__ = ("left", "right", "op")
     def __init__(self, left: Node, right: Node, op: BinaryOp):
-        assert left.shape == right.shape, f"Dimensional mismatch at binary! {left} and {right}"
+        assert left.shape == right.shape, f"Dimensional mismatch at binary! {left.shape}: {left} and {right.shape}: {right}"
 
         super().__init__([left, right], left.shape)
         self.op = op
