@@ -27,7 +27,7 @@ def dot (left: Node, right: Node) -> Node:
 def execute ():
     from .opt import opt_node
     # from .core.kernelize import kernalize
-    from .kernalize import kernalize
+    from .kernalize.kernalize import kernalize
     from .linearize import linearize
 
     # lock procedure

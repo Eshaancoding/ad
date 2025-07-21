@@ -29,4 +29,7 @@ class BinaryNode (Node):
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> ({self.left.id}: {self.children_exprs[0]}, {self.right.id}: {self.children_exprs[1]})"
+        if self.kargs[0].is_none():
+            return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> ({self.left.id}: {self.children_exprs[0]}, {self.right.id}: {self.children_exprs[1]})"
+        else:
+            return f"{self.id} = {self.op} ({stylize(total, fore("yellow") + style("bold"))}) --> ({self.kargs[0]}, {self.kargs[1]})"

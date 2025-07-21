@@ -1,0 +1,50 @@
+from typing import List
+from ..expr import *
+
+class KernelArg:
+    def __init__(self):
+        pass
+    
+    def __repr__ (self):
+        raise NotImplementedError("Kernel arg __repr__ not implemented")
+
+    def is_none (self):
+        return False
+
+class NoneKernelArg (KernelArg):
+    def __init__(self):
+        super().__init__()
+        
+    def __repr__(self):
+        return "None"
+    
+    def is_none(self):
+        return True
+
+class KMatrix (KernelArg):
+    def __init__(self, kern_id:int, access: Expression, shape: List[int]):
+        self.id = kern_id
+        self.access = access
+        self.shape = shape
+
+    def __repr__ (self):
+        return f"Mat (id: {self.id}, access: {self.access})"
+
+class KConcat (KernelArg):
+    def __init__(self, karg_one: KernelArg, karg_two: KernelArg, condition: Expression, shape: List[int]):
+        super().__init__()
+        self.karg_one = karg_one
+        self.karg_two = karg_two
+        self.condition = condition # if True access karg_two; else false
+        self.shape = shape
+
+    def __repr__(self):
+        return f"Concat (1: {self.karg_one}, 2: {self.karg_two}, condition: {self.condition})"
+    
+class KConstant (KernelArg):
+    def __init__(self, constant:float):
+        super().__init__()
+        self.constant = constant
+        
+    def __repr__ (self):
+        return f"C (val: {self.constant})"

@@ -13,6 +13,8 @@ def format_node (n: Node, visited: Dict[int, int], level):
             return "", visited
     
     s = str(n) + "\n"
+    
+    # NOTE: Will display the Concat node, even though it's folded at kernalize
     for child in n.children():
         p = ""
         if not (child.id in visited):

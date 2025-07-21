@@ -7,7 +7,7 @@ from colored import stylize, fore
 class ContigiousNode (Node):
     __match_args__ = ("child")
     def __init__(self, child:Node):
-        super().__init__([child], self.child.shape)
+        super().__init__([child], child.shape)
         
     def bck(self, grad:Node):
         self.child.bck(grad)

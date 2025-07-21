@@ -2,6 +2,7 @@ from copy import deepcopy
 import math
 from .expr import Expression, NoneExpr
 from typing import List, Callable, Dict
+from .kernalize import NoneKernelArg, KernelArg
 
 class Node:
     ############################################################
@@ -14,6 +15,7 @@ class Node:
         self.children_exprs: List[Expression] = []
         self.children_shapes: List[List[int]] = []
         self.children_datacmds: List[List[Node]] = [] # will be only datacmds nodes
+        self.kargs: List[KernelArg] = []
         for ch in children:
             if not isinstance(ch, Node): 
                 raise TypeError("Children is not type of node!")
@@ -27,6 +29,9 @@ class Node:
             
             # fill in children datacmds. This is an internal variable needed at kernalize
             self.children_datacmds.append([])
+            
+            # fill in kargs. Filled in at kernalize
+            self.kargs.append(NoneKernelArg())
 
             # as we are creating nodes, we record the latest node being changed within the context
             # as we go through the computation core, the order of the nodes being changed will also be recorded
