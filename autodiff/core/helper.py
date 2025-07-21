@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Callable, List, Dict
 from ..node import Node
 from ..expr import *
-from ..graph.data import *
+from ..core.data import *
 
 # shape helper
 def calc_stride(shape: List[int]) -> List[Expression]:

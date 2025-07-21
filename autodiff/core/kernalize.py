@@ -58,8 +58,13 @@ def fill_child_datacmds (node: Node, _):
                     n.children_datacmds[0].append(cmd)
                 if not did_repl:
                     break
+        case ConcatNode() as n:
+            while True:
                 
-def calc_exprs (node: Node, _):
+                break
+                
+                
+def calc_exprs (node: Node, _): 
     match node:
         case DotProdNode() as n:
             # calc left
@@ -107,9 +112,6 @@ def calc_exprs (node: Node, _):
             # remove data cmds
             n.children_datacmds = None
         
-            
-             
-                
 def kernalize (context: Context):
     for idx in range(len(context.procedure)):
         context.procedure[idx].nodes = walk_graph(context.procedure[idx].nodes, fill_child_datacmds)

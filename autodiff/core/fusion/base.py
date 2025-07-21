@@ -1,4 +1,6 @@
 from ...node import Node
+from ...tensor import Tensor
+from ..data import ConstantNode
 from enum import Enum
 from typing import List
 from colored import stylize, fore
@@ -24,6 +26,10 @@ class FuseBase ():
         self.is_proc = is_proc
 
     def _add_node (self, add):
+        if isinstance(add, Tensor) or isinstance(add, ConstantNode):
+            self.nodes.insert(0, add) # also add tensor and constant declarations at the top
+            return
+
         deps = get_deps(add)
         idx = None 
         for i, n in enumerate(self.nodes):

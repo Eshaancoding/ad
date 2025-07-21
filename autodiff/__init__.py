@@ -1,5 +1,5 @@
 from .tensor import *
-from .graph.data.concat import ConcatNode
+from .core.data.concat import ConcatNode
 from .context import context
 from math import prod, factorial
 from typing import Callable
@@ -21,19 +21,17 @@ def concat (nodes: List[Tensor], dim: int) -> Tensor:
     return n
 
 def dot (left: Node, right: Node) -> Node:
-    from .graph.compute.dotprod import DotProdNode
+    from .core.compute.dotprod import DotProdNode
     return DotProdNode(left, right)
 
 def execute ():
-    from .graph.opt import opt_node
-    # from .graph.kernelize import kernalize
-    from .graph.kernalize_two import kernalize
-    from .graph.linearize import linearize
-    from .graph.kernalize_two import kernalize
+    from .core.opt import opt_node
+    # from .core.kernelize import kernalize
+    from .core.kernalize import kernalize
+    from .core.linearize import linearize
 
     # lock procedure
     context.lock_proc = True
-    
     
     # apply graph-level optimizations
     # context.apply_per_node(opt_node)
@@ -53,7 +51,7 @@ def execute ():
 ##########################################
 ## Control flow 
 def ir_for (r: range, f: Callable):
-    from .graph.control.ir_for import ForNode
+    from .core.control.ir_for import ForNode
 
     context.add_proc() 
     f()

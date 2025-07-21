@@ -13,7 +13,6 @@ class ConcatNode (Node):
             if i == norm_dim: continue
             assert left.shape[i] == right.shape[i], f"Concat dim mismatch: {left.shape} and {right.shape}"
         
-        
         # calc shape
         d = deepcopy(left.shape)
         d[dim] += right.shape[dim]
@@ -34,4 +33,4 @@ class ConcatNode (Node):
         )
     
     def __repr__ (self):
-        return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id})"
+        return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id}) --> {self.children_datacmds}"
