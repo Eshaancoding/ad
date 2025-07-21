@@ -1,13 +1,10 @@
 from pprint import pprint
-from ..context import Context
-from ..node import Node
+from .context import Context
+from .node import Node
 from toposort import toposort
 from typing import Dict, List
 from .helper import walk_graph
-from .fusion import FuseBase, FuseType, ElwFuse, DPElwFuse, ReduceElwFuse, Procedure
-from .fusion.helper import print_list
-from .fusion.fuse_across import fuse_across
-from .fusion.fuse_within import fuse_within 
+from .fusion import *
 
 def linearize (context: Context):
     for proc in context.procedure:

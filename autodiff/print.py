@@ -1,4 +1,4 @@
-from ..node import Node
+from .node import Node
 from typing import Dict
 from colored import stylize, fore
 

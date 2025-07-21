@@ -1,6 +1,6 @@
 from copy import deepcopy
-from ..node import Node
-from .data.constant import ConstantNode
+from .node import Node
+from .graph import ConstantNode
 
 def opt_node (node: Node) -> Node:
     ##################################################

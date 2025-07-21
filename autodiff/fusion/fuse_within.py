@@ -1,23 +1,24 @@
-from ...tensor import Tensor
-from ..data import ConstantNode, Node
-from ...context import Context
+from ..graph import Node
+from ..context import Context
 from . import FuseBase
 from .helper import resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
 
-def fuse_across (context:Context, id_to_node, toposort_res, fuse_op: FuseBase) -> int:
+def fuse_within (context:Context, id_to_node, toposort_res, fuse_op: FuseBase) -> int:
     ch = 0
-    for i in range(len(toposort_res)-1):
-        layer_one = toposort_res[i] 
-        layer_two = toposort_res[i+1]
+    for i in range(len(toposort_res)):
+        layer = toposort_res[i] 
          
         # ---- Find potential matches ---- 
         # iterate over first node
         matches = {}
-        for id_one in layer_one:
+        for id_one in layer:
             node_one: Node = id_to_node[id_one]
            
             # iterate over second nodes
-            for id_two in layer_two:
+            for id_two in layer:
+                if id_one == id_two: 
+                    continue                
+
                 node_two: Node = id_to_node[id_two]
                 
                 # add to potential matches
@@ -32,7 +33,7 @@ def fuse_across (context:Context, id_to_node, toposort_res, fuse_op: FuseBase) -
         matches = resolve_one_to_many(matches, id_to_node)
         matches = resolve_many_to_one(matches, id_to_node) 
         matches = resolve_circular_dep(matches)
-
+        
         # ---- replace matches ---- 
         for id_one in matches:
             id_two = matches[id_one]
@@ -51,8 +52,7 @@ def fuse_across (context:Context, id_to_node, toposort_res, fuse_op: FuseBase) -
             del id_to_node[id_two]
             
             # update toposort res
-            toposort_res[i] = set(filter(lambda x: x != id_one, toposort_res[i]))
-            toposort_res[i+1] = set(filter(lambda x: x != id_two, toposort_res[i+1]))
+            toposort_res[i] = set(filter(lambda x: x != id_one and x != id_two, toposort_res[i]))
             toposort_res[i].add(new_id)
     
         ch += len(matches)

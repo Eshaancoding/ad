@@ -1,6 +1,6 @@
 from .base import FuseBase, Node, FuseType
 import math
-from ..compute import UnaryNode, BinaryNode, DotProdNode, ReduceNode
+from ..graph import UnaryNode, BinaryNode, DotProdNode, ReduceNode
 
 """
 Fuse ELW expressions together

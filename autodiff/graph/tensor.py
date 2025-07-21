@@ -1,8 +1,8 @@
-from .node import Node
+from ..node import Node
 from typing import List, Optional
 import random
 import math
-from .expr import NoneExpr
+from ..expr import NoneExpr
 
 class Tensor (Node):
     __match_args__ = ("data", "shape")

@@ -1,4 +1,4 @@
-from ..expr import *
+from . import *
 import math
 
 # level 1 simplifications

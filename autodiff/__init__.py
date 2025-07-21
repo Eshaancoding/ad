@@ -1,8 +1,8 @@
-from .tensor import *
-from .core.data.concat import ConcatNode
+from .graph import *
 from .context import context
-from math import prod, factorial
+from math import prod
 from typing import Callable
+from .graph import Tensor
 
 ##########################################
 ## Autodiff operations
@@ -25,10 +25,10 @@ def dot (left: Node, right: Node) -> Node:
     return DotProdNode(left, right)
 
 def execute ():
-    from .core.opt import opt_node
+    from .opt import opt_node
     # from .core.kernelize import kernalize
-    from .core.kernalize import kernalize
-    from .core.linearize import linearize
+    from .kernalize import kernalize
+    from .linearize import linearize
 
     # lock procedure
     context.lock_proc = True

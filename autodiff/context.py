@@ -1,7 +1,7 @@
 from typing import Callable, List
 from .node import Node
 from colored import Fore, Style
-from .core.print import print_graph as g_print
+from .print import print_graph as g_print
 
 class Block ():
     def __init__(self):

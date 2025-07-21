@@ -1,5 +1,4 @@
 from ...node import Node
-from autodiff import dot
 from colored import stylize, fore, style
 
 class DotProdNode (Node):
@@ -16,8 +15,8 @@ class DotProdNode (Node):
         super().__init__([left, right], shape=[left.shape[0], right.shape[1]])
         
     def bck (self, grad:Node):
-        self.left.bck(dot(grad, self.right.T()))
-        self.right.bck(dot(self.left.T(), grad))
+        self.left.bck(grad @ self.right.T())
+        self.right.bck(self.left.T() @ grad)
         
     def __repr__ (self):
         l_shape = self.children_shapes[0]

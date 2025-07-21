@@ -61,20 +61,20 @@ class Node:
     ## Other methods
     # Calls backend 
     def backward (self):
-        from .core.data.constant import ConstantNode
+        from .graph import ConstantNode
         self.bck(ConstantNode(1.0, self.shape))
     
     # helper for binary ops
     def _to_node (self, node, dim: List[int]):
         if isinstance(node, int):
             if dim is not None:
-                from .core.data.constant import ConstantNode
+                from .graph import ConstantNode
                 return ConstantNode(float(node), dim)
             else:
                 raise TypeError("Cannot run dot product on a constant without dim (declare constant manually)")
         elif isinstance(node, float):
             if dim is not None:
-                from .core.data.constant import ConstantNode
+                from .graph import ConstantNode
                 return ConstantNode(node, dim)
             else:
                 raise TypeError("Cannot run dot product on a constant without dim (declare constant manually)")
@@ -112,8 +112,7 @@ class Node:
     ############################################################
     ## Binary operations (+, *, -, /, @ matmul)
     def __add__ (self, other):
-        from .core.compute.binary import BinaryNode, BinaryOp
-        from .core.data.broadcast import try_broadcast 
+        from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.ADD) 
     
@@ -121,8 +120,7 @@ class Node:
         return self.__add__(other)
     
     def __mul__ (self, other):
-        from .core.compute.binary import BinaryNode, BinaryOp
-        from .core.data.broadcast import try_broadcast 
+        from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
     
@@ -130,26 +128,22 @@ class Node:
         return self.__mul__(other)
     
     def __sub__(self, other):
-        from .core.compute.binary import BinaryNode, BinaryOp
-        from .core.data.broadcast import try_broadcast 
+        from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape) * -1.0)
         return BinaryNode(a, b, BinaryOp.ADD)
     
     def __rsub__(self, other):
-        from .core.compute.binary import BinaryNode, BinaryOp
-        from .core.data.broadcast import try_broadcast 
+        from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self._to_node(other, self.shape), self * -1.0)
         return BinaryNode(a, b, BinaryOp.ADD)
     
     def __truediv__(self, other):
-        from .core.compute.binary import BinaryNode, BinaryOp
-        from .core.data.broadcast import try_broadcast 
+        from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape).recip())
         return BinaryNode(a, b, BinaryOp.MULT)
     
     def __rtruediv__(self, other):
-        from .core.compute.binary import BinaryNode, BinaryOp
-        from .core.data.broadcast import try_broadcast 
+        from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self.recip(), self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
     
@@ -157,55 +151,55 @@ class Node:
         return self.__mul__(-1.0)
     
     def __matmul__ (self, other):
-        from .core.compute.dotprod import DotProdNode
+        from .graph import DotProdNode
         return DotProdNode(self, self._to_node(other, None))
     
     def __rmatmul__ (self, other):
-        from .core.compute.dotprod import DotProdNode
+        from .graph import DotProdNode
         return DotProdNode(self._to_node(other, None), self)
     
     ############################################################
     ## Comparison operations
     def __eq__(self, other):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self - other, UnaryOp.EQUAL)
 
     def __lt__(self, other):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self - other, UnaryOp.LESS_ZERO)
 
     def __le__(self, other):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self - other, UnaryOp.LESS_OR_EQ_ZERO)
 
     def __gt__(self, other):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self - other, UnaryOp.MORE_ZERO)
 
     def __ge__(self, other):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self - other, UnaryOp.MORE_OR_EQ_ZERO)
     
     ############################################################
     ## Unary operations
     def exp2 (self):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self, UnaryOp.EXP2)
     
     def log2 (self):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self, UnaryOp.LOG2)
     
     def sin (self):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self, UnaryOp.SIN)
     
     def sqrt (self):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self, UnaryOp.SQRT)
     
     def recip (self):
-        from .core.compute.unary import UnaryNode, UnaryOp
+        from .graph import UnaryNode, UnaryOp
         return UnaryNode(self, UnaryOp.RECIP)
     
     ## Operations derived from the above core ops
@@ -235,12 +229,12 @@ class Node:
     ############################################################
     ## Data Manipulation operations
     def broadcast (self, dim: int, size: int):
-        from .core.data.broadcast import BroadcastNode
+        from .graph import BroadcastNode
         assert self.shape[dim] == 1, "Broadcast dim invalid"
         return BroadcastNode(self, dim, size)
     
     def view (self, target_dim: list[int]):
-        from .core.data.view import ViewNode
+        from .graph import ViewNode
         # handle -1 dim 
         target_dim = ViewNode.handle_minus_dim(self.shape, target_dim)
 
@@ -250,11 +244,11 @@ class Node:
             return self
         
     def contigious (self):
-        from .core.data.contigious import ContigiousNode
+        from .graph import ContigiousNode
         return ContigiousNode(self)
     
     def __getitem__(self, idx):
-        from .core.data.index import IndexNode
+        from .graph import IndexNode
         # Ensure indexing is a tuple
         if not isinstance(idx, tuple):
             idx = (idx,)
@@ -283,7 +277,7 @@ class Node:
         return result
 
     def permute (self, l: list[int]):
-        from .core.data.permute import PermuteNode
+        from .graph import PermuteNode
         
         # if contigious list ([0,1,2,..])
         if sum([l[i] == i for i in range(len(l))]) == len(l):
@@ -292,7 +286,7 @@ class Node:
             return PermuteNode(self, l)
     
     def _reduce_proc (self, dim: int, op):
-        from .core.compute.reduce import ReduceNode
+        from .graph import ReduceNode
         p_dim = len(self.shape) 
 
         # Handle negative dimension
@@ -328,11 +322,11 @@ class Node:
         return node
     
     def sum (self, dim: int):
-        from .core.compute.reduce import ReduceOp
+        from .graph import ReduceOp
         return Node._reduce_proc(self, dim, ReduceOp.SUM)
    
     def max (self, dim: int):
-        from .core.compute.reduce import ReduceOp
+        from .graph import ReduceOp
         return Node._reduce_proc(self, dim, ReduceOp.MAX)
         
     ## Data operations derived from the above core ops

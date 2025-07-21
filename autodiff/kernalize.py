@@ -1,12 +1,11 @@
-from ..expr import *
-from ..expr.simplify import simplify_expr
+from .expr import *
+from .expr.simplify import simplify_expr
 from .helper import global_to_ndim, ndim_to_global, walk_graph, ndim_change_datacmds
-from ..node import Node
-from ..context import Context
+from .node import Node
+from .context import Context
 from .print import print_graph
 
-from .compute import *
-from .data import *
+from .graph import *
 
 from typing import Optional, Dict, Tuple
 from enum import Enum

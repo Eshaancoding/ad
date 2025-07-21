@@ -1,4 +1,4 @@
-from ..tensor import Tensor
+from ..graph.tensor import Tensor
 from ..node import Node
 from .module import Module
 

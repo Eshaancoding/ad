@@ -1,5 +1,5 @@
 from ..module import Module
-from ...tensor import Tensor
+from ...graph.tensor import Tensor
 
 # TODO: test this?
 class LayerNorm (Module):

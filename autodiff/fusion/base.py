@@ -1,6 +1,5 @@
-from ...node import Node
-from ...tensor import Tensor
-from ..data import ConstantNode
+from ..node import Node
+from ..graph import ConstantNode, Tensor
 from enum import Enum
 from typing import List
 from colored import stylize, fore
