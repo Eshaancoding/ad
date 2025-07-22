@@ -29,6 +29,8 @@ def execute ():
     # from .core.kernelize import kernalize
     from .kernalize.kernalize import kernalize
     from .linearize import linearize
+    from .alloc import alloc
+    from pprint import pprint
 
     # lock procedure
     context.lock_proc = True
@@ -42,11 +44,18 @@ def execute ():
     kernalize(context)
 
     # Linearize + fusion
-    linearize(context) 
+    p = linearize(context) 
     
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
     # see if you can make fusion better here as well (test)
+    
+    # Apply allocations + opts on allocs
+    alloc(p)
+    
+    for n in p:
+        pprint(n)
+        # TODO: why tf is print not working
     
     # Send procedure to device to be executed
 

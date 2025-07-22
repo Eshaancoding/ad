@@ -35,6 +35,7 @@ class Context ():
     def __init__ (self):
         self.dep_nodes = []
         self.id = -1
+        self.fuse_id = -1
         self.procedure = [Block()] # first procedure is the main block
         self.lock_proc = False
         self.temp_to_expr = {}
@@ -61,6 +62,10 @@ class Context ():
     def get_id (self):
         self.id += 1
         return self.id
+    
+    def get_fuse_id (self):
+        self.fuse_id += 1
+        return self.fuse_id
     
     def __repr__(self):
         return self.procedure[0].__repr__()

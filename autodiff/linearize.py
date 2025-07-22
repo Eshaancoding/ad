@@ -13,7 +13,8 @@ def linearize (context: Context):
 
         # Fill id to node
         def fill_id_to_node (n: Node, visited: Dict[int, int] = {}):
-            # ConcatNode and ConstantNode is not folded by linearize. Could be a todo for future releases
+            # ConcatNode and ConstantNode is not folded by kernalize. Could be a todo for future releases
+            # For now, just ignore them at linearize
             if not isinstance(n, ConcatNode) and not isinstance(n, ConstantNode): 
                 id_to_node[n.id] = n
 
@@ -76,8 +77,8 @@ def linearize (context: Context):
 
         try:
             proc = list(id_to_node.values())[0].nodes
-            for n in proc:
-                print(n)
+            return proc
         except:
             print_list(id_to_node, toposort_res)
             raise Exception("Can't ret proc")
+        

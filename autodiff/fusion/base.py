@@ -2,7 +2,7 @@ from ..node import Node
 from ..graph import ConstantNode, Tensor
 from enum import Enum
 from typing import List
-from colored import stylize, fore
+from colored import stylize, fore, style
 from .helper import get_deps, get_res
 
 """
@@ -20,9 +20,11 @@ class FuseType (Enum):
 
 class FuseBase ():
     def __init__(self, ty:FuseType, is_proc: bool = False):
+        from ..context import context
         self.type = ty
         self.nodes: List[Node] = []
         self.is_proc = is_proc
+        self.fuse_id = context.get_fuse_id()
 
     def _add_node (self, add):
         """
@@ -73,7 +75,7 @@ class FuseBase ():
         raise NotImplementedError("Need to implement could_fuse(); true or false on whether it could fuse")
     
     def __repr__(self):
-        st = stylize(f"{type(self).__name__} Fusion:\n", fore("blue"))
+        st = stylize(f"{type(self).__name__} Fusion", fore("cyan")) + f" (fuse_id: {stylize(self.fuse_id, fore("green") + style("bold"))}):\n"
         for n in self.nodes:
             st += f"    {n}\n"
 
