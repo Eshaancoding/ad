@@ -1,35 +1,44 @@
-from pprint import pprint
 from .context import Context
 from .node import Node
 from toposort import toposort
 from typing import Dict, List
 from .helper import walk_graph
 from .fusion import *
+from .graph import ConcatNode, ConstantNode
 
 def linearize (context: Context):
     for proc in context.procedure:
         g_dep = {}
         id_to_node = {}
 
-        def test_toposort(n: Node, visited: Dict[int, int] = {}):
+        # Fill id to node
+        def fill_id_to_node (n: Node, visited: Dict[int, int] = {}):
+            # ConcatNode and ConstantNode is not folded by linearize. Could be a todo for future releases
+            if not isinstance(n, ConcatNode) and not isinstance(n, ConstantNode): 
+                id_to_node[n.id] = n
+
+        walk_graph(proc.nodes, fill_id_to_node)
+
+        # Fill deps (g_dep)
+        def fill_deps (n: Node, visited: Dict[int, int] = {}):
             n_id = n.id
-            id_to_node[n_id] = n
             visited[n.id] = 1
 
-            ids_dep = [child.id for child in n.children()]
+            ids_dep = n.kargs_child_ids()
             if n_id not in g_dep:
-                g_dep[n_id] = list(set(ids_dep))
+                g_dep[n_id] = ids_dep
             else:
                 g_dep[n_id].extend(ids_dep)
                 g_dep[n_id] = list(set(g_dep[n_id]))
             
-            for child in n.children():
-                if not (child.id in visited):
-                    test_toposort(child, visited)
+            for child_id in ids_dep:
+                if not child_id in visited:
+                    fill_deps(id_to_node[child_id], visited)
 
             return n
-        
-        walk_graph(proc.nodes, test_toposort)
+
+        for n in proc.nodes:
+            fill_deps(n)
         
         toposort_res = list(toposort(g_dep))
         

@@ -8,8 +8,11 @@ class KernelArg:
     def __repr__ (self):
         raise NotImplementedError("Kernel arg __repr__ not implemented")
 
-    def is_none (self):
+    def is_none (self) -> bool:
         return False
+    
+    def get_ids (self) -> List[int]:
+        raise NotImplementedError("Kernel arg get_ids not implemented")
 
 class NoneKernelArg (KernelArg):
     def __init__(self):
@@ -18,17 +21,20 @@ class NoneKernelArg (KernelArg):
     def __repr__(self):
         return "None"
     
-    def is_none(self):
+    def is_none (self):
         return True
 
 class KMatrix (KernelArg):
-    def __init__(self, kern_id:int, access: Expression, shape: List[int]):
+    def __init__(self, kern_id:int, access: List[Expression], shape: List[int]):
         self.id = kern_id
         self.access = access
         self.shape = shape
 
     def __repr__ (self):
         return f"Mat (id: {self.id}, access: {self.access})"
+    
+    def get_ids (self):
+        return [self.id]
 
 class KConcat (KernelArg):
     def __init__(self, karg_one: KernelArg, karg_two: KernelArg, condition: Expression, shape: List[int]):
@@ -41,6 +47,11 @@ class KConcat (KernelArg):
     def __repr__(self):
         return f"Concat (1: {self.karg_one}, 2: {self.karg_two}, condition: {self.condition})"
     
+    def get_ids (self):
+        a = self.karg_one.get_ids()
+        a.extend(self.karg_two.get_ids())
+        return list(set(a)) 
+    
 class KConstant (KernelArg):
     def __init__(self, constant:float):
         super().__init__()
@@ -48,3 +59,6 @@ class KConstant (KernelArg):
         
     def __repr__ (self):
         return f"C (val: {self.constant})"
+
+    def get_ids (self):
+        return []

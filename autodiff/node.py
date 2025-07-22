@@ -1,7 +1,7 @@
 from copy import deepcopy
 import math
 from .expr import Expression, NoneExpr
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Optional
 from .kernalize import NoneKernelArg, KernelArg
 
 class Node:
@@ -12,16 +12,12 @@ class Node:
         from autodiff import context
 
         self.id = context.get_id()
-        self.children_exprs: List[Expression] = []
         self.children_shapes: List[List[int]] = []
         self.children_datacmds: List[List[Node]] = [] # will be only datacmds nodes
         self.kargs: List[KernelArg] = []
         for ch in children:
             if not isinstance(ch, Node): 
                 raise TypeError("Children is not type of node!")
-            
-            # record child shapes + set up child_exprs 
-            self.children_exprs.append(NoneExpr()) # will be filled out at kernalize
             
             # this shape could change (especially at kernalize). Save the deepcopy of shape and use this shape
             # One tensor can be represented in multiple dimensions/views (depends on the children exprs)
@@ -30,7 +26,7 @@ class Node:
             # fill in children datacmds. This is an internal variable needed at kernalize
             self.children_datacmds.append([])
             
-            # fill in kargs. Filled in at kernalize
+            # fill in kargs. Filled in at kernalize (uses children_datacmds)
             self.kargs.append(NoneKernelArg())
 
             # as we are creating nodes, we record the latest node being changed within the context
@@ -88,23 +84,6 @@ class Node:
        
         return node 
     
-    # helper to iterateover the children of nodes
-    def walk (self, f: Callable, visited: Dict[int, int], args=[]):
-        res = f(self, *args) 
-        visited[self.id] = 1
-       
-        if hasattr(res, "child"):
-            if not (res.child.id in visited):
-                res.child = res.child.walk(f, visited=visited, args=args)
-        elif hasattr(res, "left") and hasattr(res, "right"):
-            if not (res.left.id in visited):
-                res.left = res.left.walk(f, visited=visited, args=args)
-
-            if not (res.right.id in visited):
-                res.right = res.right.walk(f, visited=visited, args=args)
-            
-        return res
-    
     # helper to get children 
     def children (self):
         if hasattr(self, "left") and hasattr(self, "right"):
@@ -113,6 +92,13 @@ class Node:
             return [self.child]
         else:
             return []
+        
+    # gets the children ids from kwargs (used often at linearize, after kernalize operation is done)
+    def kargs_child_ids (self):
+        r = []
+        for k in self.kargs:
+            r.extend(k.get_ids()) 
+        return list(set(r))
 
     ############################################################
     ## Binary operations (+, *, -, /, @ matmul)

@@ -1,20 +1,29 @@
 from ...node import Node
 from copy import deepcopy
 from .constant import ConstantNode
+from ...expr import NoneExpr
 
 class IndexNode (Node):
     __match_args__ = ("child", "start", "end", "dim")
-    def __init__(self, child:Node, start:int, end:int, dim:int):
-        # calc shape 
-        d = deepcopy(child.shape) 
-        d[dim] = end - start
+    def __init__(self, child:Node, start:int, end:int, dim:int, for_concat=False):
+        if for_concat: # phantom node for concatenation (since IndexNode is used for datacmds at kernalize)
+            super().__init__([], []) 
+            self.child = child
+            self.start = start
+            self.end = end
+            self.dim = dim
+            self.children_exprs = [NoneExpr()]
+        else:
+            # calc shape 
+            d = deepcopy(child.shape) 
+            d[dim] = end - start
         
-        # init
-        super().__init__([child], d)
-        self.start = start
-        self.end = end
-        self.dim = dim
-        
+            # init
+            super().__init__([child], d)
+            self.start = start
+            self.end = end
+            self.dim = dim
+            
     def bck(self, grad):
         c_dim = self.children_shapes[0]
         

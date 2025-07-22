@@ -29,4 +29,8 @@ class ReduceNode (Node):
         sh = self.children_shapes[0]
         x_dim = sh[0] 
         y_dim = sh[1]
-        return f"{self.id} = {self.op} on dim: -1 {stylize(f"(Vec/X: {x_dim}, Reduce/Y: {y_dim})", fore("yellow") + style("bold"))} ({self.child.id}: {self.children_exprs[0]})"
+        size_str = stylize(f"(Vec/X: {x_dim}, Reduce/Y: {y_dim})", fore("yellow") + style("bold"))
+        if self.kargs[0].is_none():
+            return f"{self.id} = {self.op} on dim: -1 {size_str} ({self.child.id})"
+        else:
+            return f"{self.id} = {self.op} on dim: -1 {size_str} ({self.kargs[0]})"

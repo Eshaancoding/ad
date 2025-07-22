@@ -4,7 +4,11 @@ from colored import stylize, fore
 ############################################
 ## Value
 class Value:
-    pass
+    def __eq__ (self, other):
+        if isinstance(other, Value):
+            return self.__repr__() == other.__repr__()
+        else:
+            return False
 
 @dataclass
 class Constant(Value):

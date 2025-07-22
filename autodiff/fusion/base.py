@@ -25,21 +25,30 @@ class FuseBase ():
         self.is_proc = is_proc
 
     def _add_node (self, add):
-        if isinstance(add, Tensor) or isinstance(add, ConstantNode):
-            self.nodes.insert(0, add) # also add tensor and constant declarations at the top
-            return
+        """
+        The below code is for "smartly" trying to insert nodes that has deps at their nearest definition 
+        However, this didn't so well. Also weirdly enough, using self.nodes.append works fairly well 
+        and accomplishes the same effect
+        """
 
-        deps = get_deps(add)
-        idx = None 
-        for i, n in enumerate(self.nodes):
-            res = get_res(n)
-            if res in deps:
-                idx = i+1
+        # if isinstance(add, Tensor) or isinstance(add, ConstantNode):
+            # self.nodes.insert(0, add) # also add tensor and constant declarations at the top
+            # return
+        # match the dependencies
+        # deps = get_deps(add)
+        # idx = None 
+        # for i, n in enumerate(self.nodes):
+        #     res = get_res(n)
+        #     if res in deps:
+        #         idx = i+1
                 
-        if idx == None:
-            idx = len(self.nodes)
-            
-        self.nodes.insert(idx, add)
+        # if idx == None:
+        #     self.nodes.insert(0, add)
+        # else: 
+        #     print("IDX SOME!")
+        #     self.nodes.insert(idx, add)
+
+        self.nodes.append(add)
 
     def add (self, n):
         if isinstance(n, FuseBase):

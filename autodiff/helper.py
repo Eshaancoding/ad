@@ -39,7 +39,7 @@ def ndim_to_global(dim: List[Expression], shape: List[int]) -> Expression:
     return global_expr
 
 def ndim_change_datacmds (dim: List[Expression], data_cmds: List[Node]):
-    for data_cmd in reversed(data_cmds):
+    for data_cmd in data_cmds:
         match data_cmd:
             case PermuteNode(_, _ as permute_to):
                 new_dim = [Val(Constant(0)) for _ in range(len(dim))]
@@ -54,7 +54,10 @@ def ndim_change_datacmds (dim: List[Expression], data_cmds: List[Node]):
                 dim[d] = Val(Constant(0))
                 
             case IndexNode(_, _ as start, _, _ as d):
-                dim[d] = Add(dim[d], Val(Constant(start)))
+                if start < 0: # in support for offsetted dim on concat
+                    dim[d] = Minus(dim[d], Val(Constant(abs(start))))
+                else:
+                    dim[d] = Add(dim[d], Val(Constant(start)))
                 
     return dim
 
@@ -78,6 +81,7 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, **kwargs) -> Node
 def walk_graph (n: Node, f: Callable, **kwargs):
     """
     NOTE: If you are calling func within func at walk_graph, then make sure you have visited gaurd and insert node.id at visited
+    NOTE: This uses .left, .right and .child. It will walk through the Concat nodes (not the kargs_child_ids)
     """
     
     if isinstance(n, list) and len(n) > 0 and isinstance(n[0], Node):

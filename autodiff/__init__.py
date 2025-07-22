@@ -21,7 +21,7 @@ def concat (nodes: List[Tensor], dim: int) -> Tensor:
     return n
 
 def dot (left: Node, right: Node) -> Node:
-    from .core.compute.dotprod import DotProdNode
+    from .graph import DotProdNode
     return DotProdNode(left, right)
 
 def execute ():
@@ -37,6 +37,8 @@ def execute ():
     # context.apply_per_node(opt_node)
     
     # Kernalize the graph; remove the data cmds and just use access expressions
+    # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
+    # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented 
     kernalize(context)
 
     # Linearize + fusion
@@ -64,4 +66,7 @@ def ir_for (r: range, f: Callable):
 ##########################################
 ## Misc
 def print_graph ():
+    """
+    Note that print graph will show concat node, even though it's folded at kernalize.
+    """
     context.print_graph()

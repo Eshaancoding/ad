@@ -33,4 +33,4 @@ class ConcatNode (Node):
         )
     
     def __repr__ (self):
-        return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id}) --> {self.children_datacmds}"
+        return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id})"

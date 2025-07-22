@@ -20,7 +20,11 @@ class DotProdNode (Node):
         
     def __repr__ (self):
         l_shape = self.children_shapes[0]
-        l_expr = self.children_exprs[0]
         r_shape = self.children_shapes[1]
-        r_expr = self.children_exprs[1]
-        return f"{self.id} = Dot prod {stylize(l_shape, fore("yellow") + style("bold"))} x {stylize(r_shape, fore("yellow") + style("bold"))} --> ({self.left.id}: {l_expr}, {self.right.id}: {r_expr})"
+        
+        size_str = f"{stylize(l_shape, fore("yellow") + style("bold"))} x {stylize(r_shape, fore("yellow") + style("bold"))}"
+        
+        if self.kargs[0].is_none() or self.kargs[1].is_none():
+            return f"{self.id} = Dot prod {size_str} --> ({self.left.id}, {self.right.id})"
+        else:
+            return f"{self.id} = Dot prod {size_str} --> ({self.kargs[0]}, {self.kargs[1]})"

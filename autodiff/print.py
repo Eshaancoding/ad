@@ -41,4 +41,7 @@ def format_graph (n, level):
     return res
 
 def print_graph (n):
+    """
+    Note that print graph will show concat node, even though it's folded at kernalize.
+    """
     print(format_graph(n, None))
