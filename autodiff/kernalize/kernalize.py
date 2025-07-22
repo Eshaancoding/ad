@@ -3,7 +3,6 @@ from ..expr.simplify import simplify_expr
 from ..helper import global_to_ndim, ndim_to_global, walk_graph, ndim_change_datacmds
 from ..node import Node
 from ..context import Context
-from ..print import print_graph
 
 from ..graph import *
 from . import KernelArg, KMatrix, KConcat, KConstant
@@ -39,7 +38,7 @@ def fill_child_datacmds (node: Node, _):
             while True:
                 n.left, cmd, did_repl = pot_child_datacmd(n.left)
                 if isinstance(cmd, Node):
-                    n.children_datacmds[0].insert(0, cmd)
+                    n.children_datacmds[0].append(cmd)
                 if not did_repl:
                     break
 
@@ -47,7 +46,7 @@ def fill_child_datacmds (node: Node, _):
             while True:
                 n.right, cmd, did_repl = pot_child_datacmd(n.right)
                 if isinstance(cmd, Node):
-                    n.children_datacmds[1].insert(0, cmd)
+                    n.children_datacmds[1].append(cmd)
                 if not did_repl:
                     break
         case ReduceNode() | UnaryNode() | ContigiousNode() as n:
@@ -55,50 +54,36 @@ def fill_child_datacmds (node: Node, _):
             while True:
                 n.child, cmd, did_repl = pot_child_datacmd(n.child)
                 if isinstance(cmd, Node):
-                    n.children_datacmds[0].insert(0, cmd)
+                    n.children_datacmds[0].append(cmd)
                 if not did_repl:
                     break
                
-def make_karg (initial_dim, child: Node, data_cmds, shape):
+def make_karg (initial_dim, child: Node, data_cmds, shape, size:Optional[int]=None):
     if isinstance(child, ConstantNode):
         return KConstant(child.constant)
     elif isinstance(child, ConcatNode):
-        idx_end = child.children_shapes[0][child.dim]
-
-        # extend to the data cmds
-        child.children_datacmds[0].extend(data_cmds)
-        child.children_datacmds[1].extend(data_cmds)
+        dim = ndim_change_datacmds(initial_dim, data_cmds)        
+        concat_dim = child.dim
+        idx_end = child.children_shapes[0][concat_dim]
         
-        # for the second child, offset the dim by idx_end (we do this via IndexNode)
-        child.children_datacmds[1].append(IndexNode(
-            Node([], []), 
-            start=-idx_end, 
-            end=-1, 
-            dim=child.dim, 
-            for_concat=True
-        )) 
-
+        dim_two = deepcopy(dim)
+        dim_two[concat_dim] = Minus(dim_two[concat_dim], Val(Constant(idx_end)))
+   
+        condition = deepcopy(MoreThan(dim[concat_dim], Val(Constant(idx_end-1))))
+    
         karg_one = make_karg(
-            initial_dim,
+            dim,
             child.left,
             child.children_datacmds[0],
             child.children_shapes[0]
         )
         
         karg_two=make_karg(
-            initial_dim,
+            dim_two,
             child.right,
             child.children_datacmds[1],
             child.children_shapes[1]
         )
-
-        # Calculate the "access" dim. This is by taking the initial dim and going through the data cmds
-        # Then apply this as condition
-        # TODO: Check if this works lol
-        if initial_dim == Global():
-            initial_dim = global_to_ndim(initial_dim, child.shape)
-        initial_dim = ndim_change_datacmds(initial_dim, data_cmds)
-        condition = simplify_expr(MoreThan(initial_dim[child.dim], Val(Constant(idx_end-1))), None)
         
         return KConcat(
             karg_one,
@@ -108,37 +93,27 @@ def make_karg (initial_dim, child: Node, data_cmds, shape):
         )
         
     else:
-        if initial_dim == Global():
-            initial_dim = global_to_ndim(initial_dim, child.shape)
         dim = ndim_change_datacmds(initial_dim, data_cmds)
-        return KMatrix(child.id, dim, shape)
-    
-def simplify_karg (child: KernelArg, size: Optional[int]=None):
-    if isinstance(child, KMatrix):
-        child.access = simplify_expr(ndim_to_global(child.access, child.shape), size)
-        # child.access = simplify_expr(child.access)
-    elif isinstance(child, KConcat):
-        simplify_karg(child.karg_one) 
-        simplify_karg(child.karg_two)
-    return child
-
+        dim = simplify_expr(ndim_to_global(dim, child.shape), size)
+        return KMatrix(child.id, dim, child.shape)
+   
 def calc_exprs (node: Node, _):
     match node:
         case DotProdNode() as n:
             # calc left
-            n.kargs[0] = simplify_karg(make_karg(
+            n.kargs[0] = make_karg(
                 initial_dim=[X(), Y()],
                 child=n.left,
                 data_cmds=n.children_datacmds[0],
                 shape=n.children_shapes[0]
-            ))
+            )
 
-            n.kargs[1] = simplify_karg(make_karg(
+            n.kargs[1] = make_karg(
                 initial_dim=[X(), Y()],
                 child=n.right,
                 data_cmds=n.children_datacmds[1],
                 shape=n.children_shapes[1]
-            ))
+            )
 
             # remove data cmds
             n.children_datacmds = None
@@ -147,31 +122,33 @@ def calc_exprs (node: Node, _):
             size = math.prod(n.shape) 
 
             # calc left
-            n.kargs[0] = simplify_karg(make_karg(
-                initial_dim=Global(),
+            n.kargs[0] = make_karg(
+                initial_dim=global_to_ndim(Global(), n.children_shapes[0]),
                 child=n.left,
                 data_cmds=n.children_datacmds[0],
-                shape=n.children_shapes[0]
-            ), size)
+                shape=n.children_shapes[0],
+                size=size
+            )
             
-            n.kargs[1] = simplify_karg(make_karg(
-                initial_dim=Global(),
+            n.kargs[1] = make_karg(
+                initial_dim=global_to_ndim(Global(), n.children_shapes[1]),
                 child=n.right,
                 data_cmds=n.children_datacmds[1],
-                shape=n.children_shapes[1]
-            ), size)
+                shape=n.children_shapes[1],
+                size=size
+            )
 
             # remove data cmds
             n.children_datacmds = None
 
         case ReduceNode() as n:
             # calc child
-            n.kargs[0] = simplify_karg(make_karg(
+            n.kargs[0] = make_karg(
                 initial_dim=[X(), Y()],
                 child=n.child,
                 data_cmds=n.children_datacmds[0],
                 shape=n.children_shapes[0]
-            ))
+            )
             
             # remove data cmds
             n.children_datacmds = None
@@ -180,12 +157,13 @@ def calc_exprs (node: Node, _):
             size = math.prod(n.shape) 
             
             # calc child
-            n.kargs[0] = simplify_karg(make_karg(
-                initial_dim=Global(),
+            n.kargs[0] = make_karg(
+                initial_dim=global_to_ndim(Global(), n.children_shapes[0]),
                 child=n.child,
                 data_cmds=n.children_datacmds[0],
-                shape=n.children_shapes[0]
-            ), size)
+                shape=n.children_shapes[0],
+                size=size
+            )
 
             # remove data cmds
             n.children_datacmds = None

@@ -51,6 +51,12 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
         case ShiftRight(Val(Constant(0)), _):
             return Val(Constant(0))
 
+        ############### Conatenation Simplification
+        case Minus(Minus(_ as g, Val(Constant(n1))), Val(Constant(n2))):
+            return simpl_expr_inner(Minus(g, Val(Constant(n1 + n2))), size)
+        
+        case MoreThan(Minus(_ as g, Val(Constant(n1))), Val(Constant(n2))):
+            return simpl_expr_inner(MoreThan(g, Val(Constant(n1 + n2))), size)
 
         ############### Bit simplifications
         # _ * 2^p --> _ << p
@@ -112,12 +118,24 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
                 return simpl_expr_inner(val, size)
             
         # If the size of the command is given, then we can do a simple simplification
+        # ((Global >> 7) & 3) when we know size is 512
+        # In this case, we can simplify this expr to Global >> 7, as we know the max is 511, and 511 >> 7 is always <= 3
+        # If the size of the command is given, then we can do a simple simplification
         # 144 = UnaryOp.EXP2 (16) (Mat (id: 143, access: (Global & 15)))
         # Since the size of global IS 16, then we know that will never reach above >16 and &16 gaurd is useless
         case BitwiseAnd(_ as val, Val(Constant(_ as s))) if size is not None:
             if s + 1 == size:
                 return simpl_expr_inner(val, size) 
+            else:
+                # what if val must be simplified in order to test out bitwise and? 
+                # for example, >> (val) is common 
+                # TODO: Abstract this to any operation?
+                match val:
+                    case ShiftRight(Global(), Val(Constant(_ as c))):
+                        if ((size-1) >> c) <= s:
+                            return simpl_expr_inner(val, size) 
         
+         
         case _:
             pass
         
@@ -131,6 +149,7 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
 # didn't wanna think too hard...
 # TODO: Might not scale well for large exprs
 def simplify_expr (expr: Expression, size: Optional[int]):
+    # return expr
     start = expr
     while True:
         end = simpl_expr_inner(deepcopy(start), size)

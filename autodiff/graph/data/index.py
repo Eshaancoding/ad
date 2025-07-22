@@ -12,7 +12,6 @@ class IndexNode (Node):
             self.start = start
             self.end = end
             self.dim = dim
-            self.children_exprs = [NoneExpr()]
         else:
             # calc shape 
             d = deepcopy(child.shape) 
@@ -41,4 +40,4 @@ class IndexNode (Node):
         self.child.bck(g)
         
     def __repr__ (self):
-        return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id}: {self.children_exprs[0]})"
+        return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id})"

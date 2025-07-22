@@ -14,6 +14,6 @@ class ContigiousNode (Node):
         
     def __repr__ (self):
         if self.kargs[0].is_none():
-            return f"{self.id} = Contigious ({self.child.id}: {self.children_exprs[0]})"
+            return f"{self.id} = Contigious ({self.child.id})"
         else:
             return f"{self.id} = Contigious ({self.child.id}: {self.kargs[0]})"

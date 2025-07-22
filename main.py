@@ -19,6 +19,7 @@ inp = Tensor.randn((4, 128))
 res = nn(inp)
 # res.backward()
 
+
 # execute
 execute()
 

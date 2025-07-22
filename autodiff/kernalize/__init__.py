@@ -45,7 +45,10 @@ class KConcat (KernelArg):
         self.shape = shape
 
     def __repr__(self):
-        return f"Concat (1: {self.karg_one}, 2: {self.karg_two}, condition: {self.condition})"
+        from ..helper import indent_str
+        
+        # return f"Concat (\n{indent_str(self.karg_one)}\n{indent_str(self.karg_two)}\ncondition: {self.condition})"
+        return f"\nConcat (\n{indent_str(f"1: {self.karg_one}\n2: {self.karg_two}\ncond: {self.condition}")}\n)\n"
     
     def get_ids (self):
         a = self.karg_one.get_ids()

@@ -4,6 +4,14 @@ from .node import Node
 from .expr import *
 from .graph import *
 
+# indent string
+def indent_str(obj: any, size: int = 1, s: str = "    ") -> str:
+    string = str(obj)
+    indent = s * size
+    lines = string.splitlines()
+    indented_lines = [indent + line for line in lines]
+    return '\n'.join(indented_lines)
+
 # shape helper
 def calc_stride(shape: List[int]) -> List[Expression]:
     n = len(shape)
@@ -48,7 +56,7 @@ def ndim_change_datacmds (dim: List[Expression], data_cmds: List[Node]):
                 dim = new_dim 
             
             case ViewNode(_, _ as target_dim) as n:
-                dim = global_to_ndim(ndim_to_global(dim, n.children_shapes[0]), target_dim)
+                dim = global_to_ndim(ndim_to_global(dim, target_dim), n.children_shapes[0])
                 
             case BroadcastNode(_, _ as d, _):
                 dim[d] = Val(Constant(0))

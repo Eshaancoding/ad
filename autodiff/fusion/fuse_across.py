@@ -28,8 +28,8 @@ def fuse_across (context:Context, id_to_node, toposort_res, fuse_op: FuseBase) -
                         matches[id_one] = [id_two]
        
         # ---- resolve conflicts in matches ---- 
-        matches = resolve_one_to_many(matches, id_to_node)
-        matches = resolve_many_to_one(matches, id_to_node) 
+        matches = resolve_one_to_many(matches, id_to_node, True)
+        matches = resolve_many_to_one(matches, id_to_node, True) 
         matches = resolve_circular_dep(matches)
 
         # ---- replace matches ---- 

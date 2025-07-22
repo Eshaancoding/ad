@@ -41,7 +41,14 @@ def resolve_one_to_many (matches, id_to_node, debug=False):
                 if res_id in deps:
                     id_select = id_two
                     break
-                
+                    
+            if id_select is None:
+                st = ""
+                for id_two in matches[id_one]:
+                    node_two = id_to_node[id_two]
+                    st += f"{node_two}\n"
+                raise Exception(f"Multiple fuse matches for node:\n{node_one}\n\nOptions: \n{st}")
+            
             # set matches (chose the first id if invalid)
             matches[id_one] = id_select if id_select is not None else matches[id_one][0]
             
@@ -51,7 +58,7 @@ def resolve_one_to_many (matches, id_to_node, debug=False):
 
     return matches
 
-def resolve_many_to_one (matches, id_to_node):
+def resolve_many_to_one (matches, id_to_node, debug=False):
     dupl = {} 
     for id_one in matches:
         id_two = matches[id_one] 
@@ -75,6 +82,12 @@ def resolve_many_to_one (matches, id_to_node):
         # if remove list is equal to the total list, then remove one
         if len(remove) == len(dupl[id_two]):
             remove.pop()
+            
+            # debug
+            if debug:
+                # make this really good like how you do it for resolve_one_to_many
+                raise Exception(f"Multiple many to one matches")
+                print(f"Multiple many to one matches for node: {id_to_node[id_two]}")
         
         for r in remove:
             del matches[r]

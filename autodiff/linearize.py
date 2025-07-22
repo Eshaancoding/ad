@@ -43,6 +43,7 @@ def linearize (context: Context):
         toposort_res = list(toposort(g_dep))
         
         # Fuse!
+        # TODO: watch for fusion node 80, 138
         fusion_ops: List[FuseBase] = [
             DPElwFuse,
             ReduceElwFuse,
