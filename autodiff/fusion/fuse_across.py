@@ -3,7 +3,8 @@ from ..context import Context
 from . import FuseBase
 from .helper import resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
 
-def fuse_across (context:Context, id_to_node, toposort_res, fuse_op: FuseBase) -> int:
+def fuse_across (id_to_node, toposort_res, fuse_op: FuseBase) -> int:
+    from ..context import context
     ch = 0
     for i in range(len(toposort_res)-1):
         layer_one = toposort_res[i] 

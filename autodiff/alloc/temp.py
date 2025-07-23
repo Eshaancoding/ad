@@ -6,8 +6,9 @@
     # 3. etc. 
 
 from . import *
+from ..fusion import FuseBase
 
-def temp_alloc (proc: List[Node | FuseBase], fused_ids_to_of: Dict[int, FuseBase]):
+def temp_alloc (proc: Proc, fused_ids_to_of: Dict[int, FuseBase]):
     for bases in fused_ids_to_of.values():
         # for each base, track the nodes that have both dealloc and allloc
         track = {}

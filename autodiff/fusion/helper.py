@@ -25,12 +25,6 @@ def get_res (node) -> Set[str]:
     else:
         raise TypeError(f"Invalid type in calc_res: {type(node)}")
 
-def print_list (id_to_node, toposort_res):
-    for layer in toposort_res:
-        print("\n---- LAYER ----")
-        for i in layer:
-            print(id_to_node[i])
-    
 def resolve_one_to_many (matches, id_to_node, debug=False):
     for id_one in matches:
         if len(matches[id_one]) == 1:

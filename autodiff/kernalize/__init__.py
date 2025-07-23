@@ -13,6 +13,9 @@ class KernelArg:
     
     def get_ids (self) -> List[int]:
         raise NotImplementedError("Kernel arg get_ids not implemented")
+    
+    def rename (self, fr:str, to:str):
+        raise NotImplementedError("Not implemented rename")
 
 class NoneKernelArg (KernelArg):
     def __init__(self):
@@ -35,6 +38,10 @@ class KMatrix (KernelArg):
     
     def get_ids (self):
         return [self.id]
+    
+    def rename (self, fr, to):
+        if self.id == fr:
+            self.id = to
 
 class KConcat (KernelArg):
     def __init__(self, karg_one: KernelArg, karg_two: KernelArg, condition: Expression, shape: List[int]):
@@ -55,6 +62,10 @@ class KConcat (KernelArg):
         a.extend(self.karg_two.get_ids())
         return list(set(a)) 
     
+    def rename(self, fr, to):
+        self.karg_one.rename(fr, to)
+        self.karg_two.rename(fr, to)
+    
 class KConstant (KernelArg):
     def __init__(self, constant:float):
         super().__init__()
@@ -65,3 +76,6 @@ class KConstant (KernelArg):
 
     def get_ids (self):
         return []
+    
+    def rename(self, fr, to):
+        pass

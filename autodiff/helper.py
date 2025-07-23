@@ -69,11 +69,15 @@ def ndim_change_datacmds (dim: List[Expression], data_cmds: List[Node]):
                 
     return dim
 
-def _walk_node (n: Node, visited: Dict[int, int], f: Callable, **kwargs) -> Node: 
+def _walk_node (n: Node, visited: Dict[int, int], f: Callable, walk_block=True, **kwargs) -> Node: 
     res = f(n, visited, **kwargs)    
     visited[n.id] = 1
     if not isinstance(res, Node):
         res = n
+        
+    if walk_block and (block := n.get_block()):
+        n.block.nodes = walk_graph(block.nodes, f, **kwargs)
+        return n 
 
     if hasattr(res, "child"):
         if not (res.child.id in visited):
@@ -86,7 +90,7 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, **kwargs) -> Node
 
     return res
 
-def walk_graph (n: Node, f: Callable, **kwargs):
+def walk_graph (n: Node, f: Callable, walk_block=True, **kwargs):
     """
     NOTE: If you are calling func within func at walk_graph, then make sure you have visited gaurd and insert node.id at visited
     NOTE: This uses .left, .right and .child. It will walk through the Concat nodes (not the kargs_child_ids)
@@ -96,11 +100,11 @@ def walk_graph (n: Node, f: Callable, **kwargs):
         new_list = []
         visited = {}
         for node in n:
-            node = _walk_node(node, visited, f, **kwargs)
+            node = _walk_node(node, visited, f, walk_block, **kwargs)
             new_list.append(node)
         return new_list
     elif isinstance(n, Node):
-        return _walk_node(n, {}, f, **kwargs)
+        return _walk_node(n, {}, f, walk_block, **kwargs)
     else:
         raise TypeError(f"Invalid type {type(n)} in format graph")
     

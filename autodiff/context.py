@@ -1,7 +1,48 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 from .node import Node
 from colored import Fore, Style
 from .print import print_graph as g_print
+
+class Proc ():
+    def __init__(self, proc: List[Node]):
+        # TODO: Have a check for this hehehe
+        # true type: List[Node | FuseBase | AllocCmds]
+        self.procedure = proc
+        self.id = context.get_proc_id()
+        
+    def __repr__ (self):
+        from .helper import indent
+        s = ""
+        for n in self.procedure:
+            s += str(n) + "\n"
+            if hasattr(n, "proc"):
+                s += indent(str(n.proc)) + "\n"
+        return s
+    
+    def insert (self, idx, val):
+        self.procedure.insert(idx, val)
+
+    def append (self, val):
+        self.procedure.append(val)
+        
+    def walk (self, func: Callable[[Node], Optional[Node]]):
+        """Walks over the function to be called. If returned None, then it will delete the node
+
+        Args:
+            func (Callable[[Node], Node]): _description_
+        """
+        from .fusion import FuseBase
+        for idx, n in enumerate(self.procedure):
+            if isinstance(n, FuseBase):
+                for n_idx, node in enumerate(n.nodes):
+                    self.procedure[idx].nodes[n_idx] = func(node)                  
+                self.procedure[idx].nodes = list(filter(lambda x: x is not None, self.procedure[idx].nodes))
+            elif isinstance(n, Node) and n.get_proc() is not None:
+                self.procedure[idx].proc.walk(func)
+            else:
+                self.procedure[idx] = func(n)
+                
+        self.procedure = list(filter(lambda x: x is not None, self.procedure))
 
 class Block ():
     def __init__(self):
@@ -36,6 +77,7 @@ class Context ():
         self.dep_nodes = []
         self.id = -1
         self.fuse_id = -1
+        self.proc_id = -1
         self.procedure = [Block()] # first procedure is the main block
         self.lock_proc = False
         self.temp_to_expr = {}
@@ -66,6 +108,10 @@ class Context ():
     def get_fuse_id (self):
         self.fuse_id += 1
         return self.fuse_id
+
+    def get_proc_id (self):
+        self.proc_id += 1
+        return self.proc_id 
     
     def __repr__(self):
         return self.procedure[0].__repr__()

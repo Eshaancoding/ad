@@ -53,12 +53,6 @@ class Node:
         raise NotImplementedError
     
     ############################################################
-    ## Comparisons
-    def id_eq (self, other):
-        assert isinstance(other, Node), "id eq input invalid"
-        return self.id == other.id
-    
-    ############################################################
     ## Other methods
     # Calls backend 
     def backward (self):
@@ -99,6 +93,35 @@ class Node:
         for k in self.kargs:
             r.extend(k.get_ids()) 
         return list(set(r))
+    
+    # test on whether node are equal to each other
+    def id_eq (self, other):
+        assert isinstance(other, Node), "id eq input invalid"
+        return self.id == other.id
+    
+    # get whether node has a block
+    def get_block (self):
+        if hasattr(self, "block"):
+            from .context import Block
+            if isinstance(self.block, Block):
+                return self.block
+        return None
+    
+    # get whether node has a proc (used after linearize)
+    def get_proc (self):
+        if hasattr(self, "proc"):
+            from .context import Proc
+            if isinstance(self.proc, Proc):
+                return self.proc
+        return None
+    
+    # rename the kargs inputs and id
+    def rename (self, fr:int, to:int):
+        for idx, karg in enumerate(self.kargs):
+            karg.rename(fr, to)
+            self.kargs[idx] = karg
+        if self.id == fr:
+            self.id = to
 
     ############################################################
     ## Binary operations (+, *, -, /, @ matmul)

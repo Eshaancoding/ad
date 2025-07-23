@@ -2,7 +2,7 @@ from .node import Node
 from typing import Dict
 from colored import stylize, fore
 
-def indent(text: str, size: int = 1, prefix: str = "  ") -> str:
+def indent(text: str, size: int = 1, prefix: str = r"    ") -> str:
     return "\n".join((prefix*size) + line if line.strip() else line for line in text.splitlines())
 
 # print one node or print multiple nodes
@@ -13,6 +13,8 @@ def format_node (n: Node, visited: Dict[int, int], level):
             return "", visited
     
     s = str(n) + "\n"
+    if (block := n.get_block()) is not None:
+        s += indent(format_graph(block.nodes, level-1 if isinstance(level, int) else None)) + "\n"
     
     # NOTE: Will display the Concat node, even though it's folded at kernalize
     for child in n.children():
@@ -34,8 +36,6 @@ def format_graph (n, level):
             formatted_str, visited = format_node(node, visited, level)
             res += stylize(str(idx), fore("green")) + ": "
             res += formatted_str
-    elif isinstance(n, Node):
-        res, _ = format_node(n, {}, level)
     else:
         raise TypeError(f"Invalid type {type(n)} in format graph")
     return res

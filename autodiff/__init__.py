@@ -1,8 +1,8 @@
-from .graph import *
 from .context import context
 from math import prod
 from typing import Callable
-from .graph import Tensor
+from .graph import Tensor, ConcatNode, Node
+from typing import List
 
 ##########################################
 ## Autodiff operations
@@ -35,35 +35,32 @@ def execute ():
     # lock procedure
     context.lock_proc = True
     
-    # apply graph-level optimizations
+    # apply graph-level optimizations'
     # context.apply_per_node(opt_node)
     
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
     # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented 
     kernalize(context)
-
+    
     # Linearize + fusion
-    p = linearize(context) 
+    proc = linearize(context.main_proc()) 
     
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
     # see if you can make fusion better here as well (test)
     
     # Apply allocations + opts on allocs
-    alloc(p)
+    alloc(proc)
     
-    for n in p:
-        pprint(n)
-        # TODO: why tf is print not working
+    pprint(proc)
     
     # Send procedure to device to be executed
 
 ##########################################
 ## Control flow 
 def ir_for (r: range, f: Callable):
-    from .core.control.ir_for import ForNode
-
+    from .graph import ForNode
     context.add_proc() 
     f()
     proc = context.pop_proc()
