@@ -29,3 +29,6 @@ def temp_alloc (proc: Proc, fused_ids_to_of: Dict[int, FuseBase]):
             if isinstance(n, DeallocEntry):
                 if n.id in track:
                     n.is_temp = True
+            if isinstance(n, Node):
+                for t in track:
+                    n.change_to_temp(t)

@@ -97,6 +97,20 @@ def make_karg (initial_dim, child: Node, data_cmds, shape, size:Optional[int]=No
         dim = simplify_expr(ndim_to_global(dim, child.shape), size)
         return KMatrix(child.id, dim, child.shape)
    
+def make_res_arg (kern_id:int, is_global:bool, shape:list) -> KernelArg:
+    if is_global:
+        return KMatrix(
+            kern_id=kern_id,
+            access=Global(),
+            shape=shape
+        )
+    else:
+        return KMatrix(
+            kern_id=kern_id,
+            access=simplify_expr(ndim_to_global([X(), Y()], shape), None),
+            shape=shape
+        )
+   
 def calc_exprs (node: Node, _):
     match node:
         case DotProdNode() as n:
@@ -108,12 +122,16 @@ def calc_exprs (node: Node, _):
                 shape=n.children_shapes[0]
             )
 
+            # calc right
             n.kargs[1] = make_karg(
                 initial_dim=[X(), Y()],
                 child=n.right,
                 data_cmds=n.children_datacmds[1],
                 shape=n.children_shapes[1]
             )
+            
+            # calculate res arg
+            n.kres = make_res_arg(n.id, is_global=False, shape=n.shape)
 
             # remove data cmds
             n.children_datacmds = None
@@ -137,6 +155,9 @@ def calc_exprs (node: Node, _):
                 shape=n.children_shapes[1],
                 size=size
             )
+            
+            # calculate res arg
+            n.kres = make_res_arg(n.id, is_global=True, shape=n.shape)
 
             # remove data cmds
             n.children_datacmds = None
@@ -149,6 +170,9 @@ def calc_exprs (node: Node, _):
                 data_cmds=n.children_datacmds[0],
                 shape=n.children_shapes[0]
             )
+            
+            # calculate res arg
+            n.kres = make_res_arg(n.id, is_global=False, shape=n.shape)
             
             # remove data cmds
             n.children_datacmds = None
@@ -164,6 +188,9 @@ def calc_exprs (node: Node, _):
                 shape=n.children_shapes[0],
                 size=size
             )
+            
+            # calculate res arg
+            n.kres = make_res_arg(n.id, is_global=True, shape=n.shape)
 
             # remove data cmds
             n.children_datacmds = None

@@ -2,6 +2,7 @@ from . import *
 from ..fusion import FuseBase
 
 def temp_opt (proc: Proc):
+    # TODO: You have to check the access expressions!
     """
     Temp opt attempts to simplify the allocations and dealloaction. Example:
     

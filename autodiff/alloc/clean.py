@@ -7,10 +7,10 @@ def temp_clean (proc: Proc):
     
     def inner (node: Node):
         if isinstance(node, AllocEntry):
-            if not node.is_temp:
-                allocs.append(node) 
-            else:
+            if node.is_temp or node.content is not None:
                 return node
+            else:            
+                allocs.append(node) 
         elif isinstance(node, DeallocEntry):
             if not node.is_temp:
                 deallocs.append(node)

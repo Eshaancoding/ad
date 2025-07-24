@@ -15,6 +15,7 @@ class Node:
         self.children_shapes: List[List[int]] = []
         self.children_datacmds: List[List[Node]] = [] # will be only datacmds nodes
         self.kargs: List[KernelArg] = []
+        self.kres: KernelArg = NoneKernelArg() # result of the kernel argumnet; Filled at kernalize
         for ch in children:
             if not isinstance(ch, Node): 
                 raise TypeError("Children is not type of node!")
@@ -28,7 +29,7 @@ class Node:
             
             # fill in kargs. Filled in at kernalize (uses children_datacmds)
             self.kargs.append(NoneKernelArg())
-
+            
             # as we are creating nodes, we record the latest node being changed within the context
             # as we go through the computation core, the order of the nodes being changed will also be recorded
             # and being recorded into a procedure
@@ -115,13 +116,17 @@ class Node:
                 return self.proc
         return None
     
-    # rename the kargs inputs and id
+    # rename the kargs inputs and id (ideally, should be hidden by user); at kernalize
     def rename (self, fr:int, to:int):
-        for idx, karg in enumerate(self.kargs):
-            karg.rename(fr, to)
-            self.kargs[idx] = karg
-        if self.id == fr:
-            self.id = to
+        for idx in range(len(self.kargs)):
+            self.kargs[idx].rename(fr, to)
+        self.kres.rename(fr, to)        
+            
+    # set to temp (ideally, should be hidden from user); at kernalize
+    def change_to_temp (self, search:int):
+        for idx in range(len(self.kargs)):
+            self.kargs[idx].change_to_temp(search)
+        self.kres.change_to_temp(search)
 
     ############################################################
     ## Binary operations (+, *, -, /, @ matmul)

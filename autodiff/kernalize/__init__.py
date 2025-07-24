@@ -1,5 +1,6 @@
 from typing import List
 from ..expr import *
+from colored import stylize, fore
 
 class KernelArg:
     def __init__(self):
@@ -14,8 +15,12 @@ class KernelArg:
     def get_ids (self) -> List[int]:
         raise NotImplementedError("Kernel arg get_ids not implemented")
     
+    # helper functions across the opt (after linearize) that changes kernel arg
     def rename (self, fr:str, to:str):
-        raise NotImplementedError("Not implemented rename")
+        raise NotImplementedError("rename not impl for base class")
+    
+    def change_to_temp (self, search:int):
+        raise NotImplementedError("change_to_temp not impl for KernelArg")
 
 class NoneKernelArg (KernelArg):
     def __init__(self):
@@ -28,13 +33,17 @@ class NoneKernelArg (KernelArg):
         return True
 
 class KMatrix (KernelArg):
-    def __init__(self, kern_id:int, access: List[Expression], shape: List[int]):
+    def __init__(self, kern_id:int, access: Expression, shape: List[int]):
         self.id = kern_id
         self.access = access
         self.shape = shape
+        self.is_temp = False
 
     def __repr__ (self):
-        return f"Mat (id: {self.id}, access: {self.access})"
+        if self.is_temp:
+            return stylize(f"Temp (id: {self.id})", fore("green"))
+        else:
+            return f"Mat (id: {self.id}, access: {self.access})"
     
     def get_ids (self):
         return [self.id]
@@ -42,6 +51,10 @@ class KMatrix (KernelArg):
     def rename (self, fr, to):
         if self.id == fr:
             self.id = to
+            
+    def change_to_temp(self, search):
+        if self.id == search:
+            self.is_temp = True
 
 class KConcat (KernelArg):
     def __init__(self, karg_one: KernelArg, karg_two: KernelArg, condition: Expression, shape: List[int]):
@@ -65,6 +78,10 @@ class KConcat (KernelArg):
     def rename(self, fr, to):
         self.karg_one.rename(fr, to)
         self.karg_two.rename(fr, to)
+        
+    def change_to_temp(self, search):
+        self.karg_one.change_to_temp(search)
+        self.karg_two.change_to_temp(search)
     
 class KConstant (KernelArg):
     def __init__(self, constant:float):
@@ -78,4 +95,7 @@ class KConstant (KernelArg):
         return []
     
     def rename(self, fr, to):
+        pass
+    
+    def change_to_temp(self, search):
         pass

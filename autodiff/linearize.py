@@ -26,7 +26,6 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
 
     walk_graph(proc.nodes, fill_id_to_node, walk_block=False)
 
-
     # Fill deps (g_dep)
     def fill_deps (n: Node, visited: Dict[int, int] = {}):
         n_id = n.id

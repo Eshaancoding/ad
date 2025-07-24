@@ -50,7 +50,7 @@ class UnaryNode (Node):
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
         size_str = stylize(total, fore("yellow") + style("bold"))
-        if self.kargs[0].is_none():
+        if self.kargs[0].is_none() or self.kres.is_none():
             return f"{self.id} = {self.op} ({size_str}) ({self.child.id})"
         else:
-            return f"{self.id} = {self.op} ({size_str}) ({self.kargs[0]})"
+            return f"{self.kres} = {self.op} ({size_str}) ({self.kargs[0]})"

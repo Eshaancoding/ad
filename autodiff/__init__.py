@@ -30,6 +30,8 @@ def execute ():
     from .kernalize.kernalize import kernalize
     from .linearize import linearize
     from .alloc import alloc
+    from .device.opencl import OpenCLDevice, cl
+
     from pprint import pprint
 
     # lock procedure
@@ -56,6 +58,7 @@ def execute ():
     pprint(proc)
     
     # Send procedure to device to be executed
+    OpenCLDevice(cl.device_type.ALL).execute(proc)
 
 ##########################################
 ## Control flow 

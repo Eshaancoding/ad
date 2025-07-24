@@ -13,7 +13,7 @@ class ContigiousNode (Node):
         self.child.bck(grad)
         
     def __repr__ (self):
-        if self.kargs[0].is_none():
+        if self.kargs[0].is_none() or self.kres.is_none():
             return f"{self.id} = Contigious ({self.child.id})"
         else:
-            return f"{self.id} = Contigious ({self.child.id}: {self.kargs[0]})"
+            return f"{self.kres} = Contigious ({self.child.id}: {self.kargs[0]})"

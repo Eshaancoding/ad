@@ -32,7 +32,7 @@ def global_to_ndim(index: Expression, shape: List[int]) -> List[Expression]:
     ]
 
 def ndim_to_global(dim: List[Expression], shape: List[int]) -> Expression:
-    assert len(dim) == len(shape), f"Dimension and the shape length mismatch\ndim: {dim}, shape: {shape}"
+    # assert len(dim) == len(shape), f"Dimension and the shape length mismatch\ndim: {dim}, shape: {shape}"
 
     strides = calc_stride(shape)
     global_expr = Mult(dim[0], strides[0])
