@@ -41,7 +41,7 @@ class ADCLContext ():
             if len(content) != self.size_dict[buf_id]:
                 self.dealloc_all()
                 raise Exception("Size mismatch at alloc")
-            cl.enqueue_copy(self.command_queue, self.buffers[buf_id], content)
+            cl.enqueue_copy(self.command_queue, self.buffers[buf_id], np.array(content, dtype=np.float32))
 
         # else, it has already allocated the buffer
         return self.buffers[buf_id]
