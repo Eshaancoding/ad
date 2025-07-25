@@ -55,7 +55,7 @@ def execute ():
     # Apply allocations + opts on allocs
     alloc(proc)
     
-    pprint(proc)
+    # pprint(proc)
     
     # Send procedure to device to be executed
     OpenCLDevice(cl.device_type.ALL).execute(proc)

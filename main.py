@@ -28,7 +28,7 @@ def f ():
     opt.step()
 
 # In future release pass the idx
-ir_for(range(0, 10000), f)
+ir_for(range(0, 2), f)
 
 # execute
 print("Start...")
