@@ -31,7 +31,4 @@ def f ():
 ir_for(range(0, 10_000), f)
 
 # execute
-print("Start...")
-start = time()
 execute()
-print("elapsed: ", time()-start)

@@ -7,26 +7,37 @@ from ...alloc import AllocEntry, DeallocEntry
 from ...fusion import FuseBase
 from ...graph import *
 from .kernels import *
+from time import time
 
 class OpenCLDevice (Device):
     def __init__(self, device: cl.device_type):
         super().__init__()
         self.context = ADCLContext(device) 
         
-    def _exec_proc (self, proc: Proc):
+    def _exec_proc (self, proc: Proc, warm_up:bool=False):
         for cmd in proc.procedure:
             if isinstance(cmd, ForNode):
                 assert (inner_proc := cmd.get_proc()) is not None, "Inner proc is None!"
-                for _ in cmd.r:
+                if warm_up:
                     self._exec_proc(inner_proc)
+                else:
+                    for _ in cmd.r:
+                        self._exec_proc(inner_proc)
             else:
                 execute_cmd(self.context, cmd)
         
     def execute (self, proc: Proc):
+        # warmup
+        print("Warmup...")
+        self._exec_proc(proc, warm_up=True) 
+
+        print("Executing...")
+        start = time()
         self._exec_proc(proc)     
     
         # finish     
         self.context.finish() # todo: experiment whether you can enqueue copy from the dep list (put this cmd after...)
+        print("elapsed: ", time()-start)
             
         # dealloc 
         self.context.dealloc_all()
