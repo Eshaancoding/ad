@@ -5,30 +5,56 @@ from ...context import Proc
 from ...node import Node
 from ...alloc import AllocEntry, DeallocEntry
 from ...fusion import FuseBase
+from ...graph import *
+from .kernels import *
 
 class OpenCLDevice (Device):
     def __init__(self, device: cl.device_type):
         super().__init__()
         self.context = ADCLContext(device) 
         
+    def _exec_proc (self, proc: Proc):
+        for cmd in proc.procedure:
+            if isinstance(cmd, ForNode):
+                assert (inner_proc := cmd.get_proc()) is not None, "Inner proc is None!"
+                for _ in cmd.r:
+                    self._exec_proc(inner_proc)
+            else:
+                execute_cmd(self.context, cmd)
+        
     def execute (self, proc: Proc):
-        # do a warmup first (alloc, generate programs, etc.)
+        self._exec_proc(proc)     
+    
+        # finish     
+        self.context.finish() # todo: experiment whether you can enqueue copy from the dep list (put this cmd after...)
+            
+        # dealloc 
         self.context.dealloc_all()
-                            
-def execute_cmd (context: ADCLContext, cmd: any):
-    if isinstance(cmd, AllocEntry):
-        if not cmd.is_temp:
-            context.alloc(cmd.id, cmd.size, cmd.content)
-    elif isinstance(cmd, DeallocEntry):
-        if not cmd.is_temp:
-            context.dealloc(cmd.id)
-    elif isinstance(cmd, Node):
-        if cmd.get_block() is None:
-            # execute specific node
-            # for/if statements must be handled by top level (might need to do transfer from one device to another)
+
+def execute_cmd (context: ADCLContext, cmd):
+    match cmd:
+        case AllocEntry():
+            if not cmd.is_temp:
+                context.alloc(cmd.id, cmd.size, cmd.content)
+        case DeallocEntry():
             pass
-    elif isinstance(cmd, FuseBase):
-        # execute specific fusion base
-        pass  
-    else:
-        raise TypeError(f"Invalid type: {type(cmd)}")
+        case ForNode(): # handled by upper level
+            pass
+        case BinaryNode():
+            execute_binary(context, cmd)                     
+        case UnaryNode():
+            execute_unary(context, cmd)
+        case ContigiousNode():
+            execute_contigious(context, cmd)
+        case DotProdNode():
+            execute_dotprod(context, cmd)
+        case ReduceNode():
+            execute_reduce(context, cmd)
+        case ElwFuse():
+            execute_elwfuse(context, cmd)
+        case DPElwFuse():
+            execute_dp_elw_fuse(context, cmd)
+        case ReduceElwFuse():
+            execute_reduce_elw_fuse(context, cmd)
+        case _:
+            raise Exception(f"Invalid cmd: {cmd}")

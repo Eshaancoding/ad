@@ -1,11 +1,17 @@
 import pyopencl as cl
 from typing import Dict
 from typing import List
+import numpy as np
 
 # AutoDiff OpenCL Context
 class ADCLContext ():
     def __init__(self, device_type: cl.device_type):
         self.ctx = cl.Context(dev_type=device_type)
+        device = self.ctx.devices[0]
+        print("Using device:", device.name)
+        print("  Vendor:", device.vendor)
+        print("  Type:", cl.device_type.to_string(device.type))
+        
         self.command_queue = cl.CommandQueue(context=self.ctx)
         self.buffers: Dict[int, cl.Buffer] = {}
         self.programs: Dict[str, cl.Program] = {}
@@ -19,7 +25,12 @@ class ADCLContext ():
         
     def alloc (self, buf_id: int, size: int, content:any=None) -> cl.Buffer:
         if buf_id not in self.buffers:
-            bf = cl.Buffer(self.ctx, cl.mem_flags.READ_WRITE, size=size, hostbuf=content)
+            bf = cl.Buffer(
+                self.ctx, 
+                cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR if content is not None else cl.mem_flags.READ_WRITE, 
+                size=size * np.dtype(np.float32).itemsize,
+                hostbuf=np.array(content, dtype=np.float32) if content is not None else None
+            )
             self.buffers[buf_id] = bf
             self.size_dict[buf_id] = size
             return bf
@@ -27,8 +38,7 @@ class ADCLContext ():
             if len(content) != self.size_dict[buf_id]:
                 self.dealloc_all()
                 raise Exception("Size mismatch at alloc")
-
-            cl.enqueue_copy(self.ctx, self.buffers[buf_id], content)
+            cl.enqueue_copy(self.command_queue, self.buffers[buf_id], content)
 
         # else, it has already allocated the buffer
         return self.buffers[buf_id]
@@ -39,20 +49,24 @@ class ADCLContext ():
             raise Exception("Content buffer id is not in context")       
         return self.buffers[buf_id]
     
-    def get_contents (self, buf_id:int) -> List[float]:
+    def get_contents (self, buf_id:int) -> np.array:
+        """NOTE: waits for event!"""
         if buf_id not in self.buffers:
             self.dealloc_all()
-            raise Exception("Content buffer id is not in context")
-        res_g = [0.0 for _ in range(self.size_dict[buf_id])]
-        cl.enqueue_copy(self.ctx, res_g, self.buffers[buf_id])
+            raise Exception(f"Content buffer id {buf_id} is not in context (len: {len(self.buffers)})")
+
+        res_g = np.empty(shape=[self.size_dict[buf_id], ], dtype=np.float32)
+        cl.enqueue_copy(self.command_queue, res_g, self.buffers[buf_id])
         return res_g
     
     def get_program (self, name:str, program:str) -> cl.Program:
         if name not in self.programs: 
-            self.programs[name] = cl.Program(self.ctx, program).build()
+            kernels = cl.Program(self.ctx, program).build().all_kernels()
+            assert len(kernels) == 1, "More than one kernel defined"
+            self.programs[name] = kernels[0]
             self.programs_str[name] = program
-        else:
-            return self.programs[name] 
+
+        return self.programs[name] 
         
     def finish (self):
         self.command_queue.finish()

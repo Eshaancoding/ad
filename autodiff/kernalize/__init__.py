@@ -12,7 +12,7 @@ class KernelArg:
     def is_none (self) -> bool:
         return False
     
-    def get_ids (self) -> List[int]:
+    def get_ids (self, filter_temp=False) -> List[int]:
         raise NotImplementedError("Kernel arg get_ids not implemented")
     
     # helper functions across the opt (after linearize) that changes kernel arg
@@ -41,12 +41,15 @@ class KMatrix (KernelArg):
 
     def __repr__ (self):
         if self.is_temp:
-            return stylize(f"Temp (id: {self.id})", fore("green"))
+            return f"{stylize("Temp", fore("cyan"))} {self.id}"
         else:
             return f"Mat (id: {self.id}, access: {self.access})"
     
-    def get_ids (self):
-        return [self.id]
+    def get_ids (self, filter_temp=False):
+        if filter_temp and self.is_temp:
+            return []
+        else:
+            return [self.id]
     
     def rename (self, fr, to):
         if self.id == fr:
@@ -70,9 +73,9 @@ class KConcat (KernelArg):
         # return f"Concat (\n{indent_str(self.karg_one)}\n{indent_str(self.karg_two)}\ncondition: {self.condition})"
         return f"\nConcat (\n{indent_str(f"1: {self.karg_one}\n2: {self.karg_two}\ncond: {self.condition}")}\n)\n"
     
-    def get_ids (self):
-        a = self.karg_one.get_ids()
-        a.extend(self.karg_two.get_ids())
+    def get_ids (self, filter_temp=False):
+        a = self.karg_one.get_ids(filter_temp)
+        a.extend(self.karg_two.get_ids(filter_temp))
         return list(set(a)) 
     
     def rename(self, fr, to):
@@ -91,7 +94,7 @@ class KConstant (KernelArg):
     def __repr__ (self):
         return f"C (val: {self.constant})"
 
-    def get_ids (self):
+    def get_ids (self, filter_temp=False):
         return []
     
     def rename(self, fr, to):

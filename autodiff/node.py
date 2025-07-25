@@ -89,10 +89,10 @@ class Node:
             return []
         
     # gets the children ids from kwargs (used often at linearize, after kernalize operation is done)
-    def kargs_child_ids (self):
+    def kargs_child_ids (self, filter_temp=False):
         r = []
         for k in self.kargs:
-            r.extend(k.get_ids()) 
+            r.extend(k.get_ids(filter_temp)) 
         return list(set(r))
     
     # test on whether node are equal to each other

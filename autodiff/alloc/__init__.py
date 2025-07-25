@@ -37,10 +37,9 @@ class AllocEntry (AllocCmds):
         self.is_temp = False
         
     def __repr__ (self):
-        st = stylize(f"{"TEMP " if self.is_temp else ""}Alloc", fore("green")) + f" {self.id} " + stylize(str(self.size), fore("yellow") + style("bold"))
-        if self.content is not None:
-            st += " (has content)"    
-        return st
+        return stylize(f"{"TEMP " if self.is_temp else ""}Alloc", fore("cyan") if self.is_temp else fore("green")) + f" {self.id} " \
+            + (stylize(str(self.size), fore("yellow") + style("bold")) if not self.is_temp else "") \
+            + (" (has content)" if self.content is not None else "")
   
 class DeallocEntry (AllocCmds):
     def __init__(self, dealloc_id: int, size: int):
@@ -64,8 +63,8 @@ def alloc (proc: Proc):
     # Just continue to apply for every proc recursively
     temp_alloc(proc, fused_ids_to_f)
     
-    count = 1
-    while count > 0: 
-        # temp opt could be better... 
-        count = temp_opt(proc)
+    # count = 1
+    # while count > 0: 
+    #     # temp opt could be better... 
+    #     count = temp_opt(proc)
     temp_clean(proc)

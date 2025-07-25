@@ -2,7 +2,7 @@ from .node import Node
 from typing import Dict
 from colored import stylize, fore
 
-def indent(text: str, size: int = 1, prefix: str = r"    ") -> str:
+def indent(text: str, size: int = 1, prefix: str = r"  ") -> str:
     return "\n".join((prefix*size) + line if line.strip() else line for line in text.splitlines())
 
 # print one node or print multiple nodes

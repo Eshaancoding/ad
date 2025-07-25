@@ -23,6 +23,13 @@ class ElwFuse (FuseBase):
     def could_fuse (node_one: Node | FuseBase, node_two: Node | FuseBase):
         return is_elw(node_one) and is_elw(node_two) and calc_size(node_one) == calc_size(node_two)
     
+    # Short helper functions to find nodes easily
+    def get_elw (self) -> UnaryNode | BinaryNode:
+        for n in self.nodes:
+            if isinstance(n, UnaryNode) or isinstance(n, BinaryNode):
+                return n
+        raise Exception("Unary or Binary node not found in ELW")
+    
 class DPElwFuse (FuseBase):
     def __init__(self):
         super().__init__(FuseType.ACROSS_LAYER)
@@ -34,6 +41,13 @@ class DPElwFuse (FuseBase):
             is_elw(node_two) and \
             calc_size(node_one) == calc_size(node_two)
     
+    # Short helper functions that find dp node easily
+    def get_dp (self) -> DotProdNode:
+        for n in self.nodes:
+            if isinstance(n, DotProdNode):
+                return n
+        raise Exception("DotProd node not found")
+    
 class ReduceElwFuse (FuseBase):
     def __init__(self):
         super().__init__(FuseType.ACROSS_LAYER)
@@ -44,6 +58,13 @@ class ReduceElwFuse (FuseBase):
             (isinstance(node_one, ReduceNode) or isinstance(node_one, ReduceElwFuse)) and \
             is_elw(node_two) and \
             calc_size(node_one) == calc_size(node_two)
+            
+    # Short helper functions that find dp node easily
+    def get_reduce (self) -> ReduceNode:
+        for n in self.nodes:
+            if isinstance(n, ReduceNode):
+                return n
+        raise Exception("ReduceNode not found")
     
 class Procedure (FuseBase):
     def __init__ (self):

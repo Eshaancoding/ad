@@ -1,8 +1,11 @@
 # shared imports for all kernels
-from ....graph import *
-from ....context import *
-from ..context import ADCLContext
-from ..karg import *
+from .binary import *
+from .unary import *
+from .contigious import *
+from .reduce import *
+from .dotprod import * 
 
-from binary import *
-from elwfuse import *
+from .elw_fuse import *
+from .dp_elw_fuse import *
+from .reduce_elw_fuse import * 
+from .. import *
