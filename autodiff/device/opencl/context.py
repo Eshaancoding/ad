@@ -6,8 +6,9 @@ import numpy as np
 # AutoDiff OpenCL Context
 class ADCLContext ():
     def __init__(self, device_type: cl.device_type):
-        self.ctx = cl.Context(dev_type=device_type)
-        device = self.ctx.devices[0]
+        # self.ctx = cl.Context(dev_type=device_type)
+        self.ctx = cl.create_some_context()
+        # device = self.ctx.devices[0]
         # print("Using device:", device.name)
         # print("  Vendor:", device.vendor)
         # print("  Type:", cl.device_type.to_string(device.type))
