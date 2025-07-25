@@ -10,16 +10,17 @@ from time import time
 #     ff_dim=512
 # )
 
+
 nn = Sequential(
-    Linear(128, 64),
+    Linear(512, 256),
     Sigmoid(),
-    Linear(64, 32),
+    Linear(256, 128),
     Sigmoid()
 )
 
 opt = SGD(nn.parameters(), lr=0.1)
 
-inp = Tensor.randn((4, 128))
+inp = Tensor.randn((16, 512))
 
 def f ():
     res = nn(inp)
@@ -27,7 +28,7 @@ def f ():
     opt.step()
 
 # In future release pass the idx
-ir_for(range(0, 100), f)
+ir_for(range(0, 10000), f)
 
 # execute
 print("Start...")
