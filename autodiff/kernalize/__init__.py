@@ -41,7 +41,8 @@ class KMatrix (KernelArg):
 
     def __repr__ (self):
         if self.is_temp:
-            return f"{stylize("Temp", fore("cyan"))} {self.id}"
+            t = stylize("Temp", fore("cyan"))
+            return f"{t} {self.id}"
         else:
             return f"Mat (id: {self.id}, access: {self.access})"
     
