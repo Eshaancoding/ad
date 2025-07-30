@@ -36,7 +36,7 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
         if n.get_block() is not None:
             g_dep[n_id] = list(g_dep.keys())
             return n
-        
+
         ids_dep = n.kargs_child_ids()
         if n_id not in g_dep:
             g_dep[n_id] = ids_dep
@@ -44,7 +44,6 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             g_dep[n_id].extend(ids_dep)
             g_dep[n_id] = list(set(g_dep[n_id]))
 
-        
         for child_id in ids_dep:
             if not child_id in visited:
                 fill_deps(id_to_node[child_id], visited)
@@ -93,10 +92,19 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.ACROSS_LAYER) 
         else:
             toposort_res = fn_fuse(toposort_res, id_to_node, op, op().type) 
-            
-    assert len(toposort_res) == 1, "Didn't fully capture procedure"
-    assert len(toposort_res[0]) == 1, "Didn't fully capture procedure"
-    node = id_to_node[list(toposort_res[0])[0]]
-    assert isinstance(node, FuseBase), "First node is not a FuseBase object"
+
+    try:
+        assert len(toposort_res) == 1, "Didn't fully capture procedure"
+        assert len(toposort_res[0]) == 1, "Didn't fully capture procedure"
+        node = id_to_node[list(toposort_res[0])[0]]
+        assert isinstance(node, FuseBase), "First node is not a FuseBase object"
+    except Exception as e:
+        # print the proc as of now
+        for layer in toposort_res:
+            print("\n================ Layer ================")
+            for node in layer:
+                print(id_to_node[node]) 
+    
+        raise e
     
     return Proc(node.nodes)

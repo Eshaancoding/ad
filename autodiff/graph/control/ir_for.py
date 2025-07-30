@@ -17,3 +17,6 @@ class ForNode (Node):
     
     def __repr__(self):
         return f"{self.id} = For {self.r.start} to {self.r.stop}:"
+
+    def node_eq(self, other) -> bool:
+        raise Exception("For node on node_eq")

@@ -1,8 +1,10 @@
 from copy import deepcopy
-from typing import Callable, List, Dict
+from typing import Callable, List, Dict, Union
+from warnings import deprecated
 from .node import Node
 from .expr import *
 from .graph import *
+
 
 # indent string
 def indent_str(obj: any, size: int = 1, s: str = "    ") -> str:
@@ -75,7 +77,7 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, walk_block=True, 
     if not isinstance(res, Node):
         res = n
         
-    if walk_block and (block := n.get_block()):
+    if walk_block and (block := n.get_block()) is not None:
         n.block.nodes = walk_graph(block.nodes, f, **kwargs)
         return n 
 
@@ -90,7 +92,7 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, walk_block=True, 
 
     return res
 
-def walk_graph (n: Node, f: Callable, walk_block=True, **kwargs):
+def walk_graph (n: Node, f: Callable, walk_block=True, **kwargs) -> Union[List[Node], Node]:
     """
     NOTE: If you are calling func within func at walk_graph, then make sure you have visited gaurd and insert node.id at visited
     NOTE: This uses .left, .right and .child. It will walk through the Concat nodes (not the kargs_child_ids)

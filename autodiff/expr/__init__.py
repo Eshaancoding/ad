@@ -10,6 +10,9 @@ class Value:
         else:
             return False
 
+    def get_const (self) -> int:
+        raise TypeError("get_const at Value()")
+
 @dataclass
 class Constant(Value):
     val: int
@@ -17,7 +20,7 @@ class Constant(Value):
     def __repr__(self):
         return stylize(str(self.val), fore("green"))
     
-    def get_const (self):
+    def get_const (self) -> int:
         return self.val
 
 class Global(Value): 
@@ -28,7 +31,7 @@ class X(Value):
     def __repr__(self):
         return stylize("X", fore("green"))
 
-class Y(Value): 
+class Y(Value):
     def __repr__(self):
         return stylize("Y", fore("green"))
 
@@ -38,10 +41,10 @@ class Expression:
     def get_const (self) -> int:
         raise TypeError("Expression is not a const")
     
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise TypeError("Repr of expression invalid")
 
-    def is_binary (self):
+    def is_binary (self) -> bool:
         return True
     
     def __eq__(self, value):

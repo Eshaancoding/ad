@@ -34,3 +34,12 @@ class ConcatNode (Node):
     
     def __repr__ (self):
         return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id})"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, ConcatNode):
+            return False 
+
+        return \
+            self.dim == other.dim and \
+            self.left.node_eq(other.left) and \
+            self.right.node_eq(other.right)

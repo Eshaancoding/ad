@@ -5,7 +5,7 @@ def temp_clean (proc: Proc):
     allocs = [] 
     deallocs = []
     
-    def inner (node: Node):
+    def inner (node: Node, _):
         if isinstance(node, AllocEntry):
             if node.is_temp or node.content is not None:
                 return node

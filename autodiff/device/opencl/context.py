@@ -38,6 +38,7 @@ class ADCLContext ():
             self.size_dict[buf_id] = size
             return bf
         elif content is not None:
+            """NOTE: waits for event!"""
             if len(content) != self.size_dict[buf_id]:
                 self.dealloc_all()
                 raise Exception("Size mismatch at alloc")

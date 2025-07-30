@@ -2,11 +2,12 @@ from ..node import Node
 from typing import List, Optional
 import random
 import math
-from ..expr import NoneExpr
 
 class Tensor (Node):
     __match_args__ = ("data", "shape")
-    def __init__(self, data: any, shape: Optional[List[int]]):
+    def __init__(self, data, shape: Optional[List[int]]):
+        # Tensor 
+        
         sh = None
         if shape is not None:
             sh = shape 
@@ -16,8 +17,14 @@ class Tensor (Node):
             self.data = Tensor._flatten(data)
 
         super().__init__([], sh)
+
+        from ..context import context  
+
+        # always add dep list of this
+        context.add_dep_list(self.id) 
         self.grad_tensor = None 
 
+    @staticmethod
     def _get_shape_and_validate(data):
         if not isinstance(data, list):
             return ()  # Base case: leaf node (e.g., float)
@@ -43,6 +50,7 @@ class Tensor (Node):
 
         return (length,) + first_shape
     
+    @staticmethod
     def _flatten (tensor):
         if not isinstance(tensor, list):
             return [tensor]
@@ -58,18 +66,32 @@ class Tensor (Node):
             
         if self.grad_tensor is None:
             self.grad_tensor = grad
+
+            # add to grad to dep list only if lenient_dep
+            from ..context import context  
+            if context.lenient_dep:
+                context.add_dep_list(self.grad_tensor.id)
         else:
-            self.grad_tensor = self.grad_tensor + grad  
+            self.grad_tensor += grad 
             
     def grad (self):
         if self.grad_tensor is None:
             raise RuntimeError("Gradient on tensor is none! Make sure you call .backward()")        
 
         return self.grad_tensor
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, Tensor):
+            return False
+
+        # only case where I am not declaring same data and shape, and using id
+        # if the user declares the same shape and same data, then likely the user is using it for different purposes
+        return self.id == other.id 
     
     def __repr__ (self) -> str:
         return f"Tensor(id: {self.id}, orig_shape: {self.shape})"
     
+    @staticmethod
     def _gen_normal_random(mu=0, sigma=1):
         # Box-Muller transform
         u1 = random.random()
@@ -78,7 +100,7 @@ class Tensor (Node):
         return mu + z0 * sigma
     
     @staticmethod
-    def randn (shape:list[int]):
+    def randn (shape:list[int] | tuple):
         shape = list(shape)
         return Tensor([Tensor._gen_normal_random() for _ in range(math.prod(shape))], shape)
     

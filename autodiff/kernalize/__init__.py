@@ -16,7 +16,7 @@ class KernelArg:
         raise NotImplementedError("Kernel arg get_ids not implemented")
     
     # helper functions across the opt (after linearize) that changes kernel arg
-    def rename (self, fr:str, to:str):
+    def rename (self, fr:int, to:int):
         raise NotImplementedError("rename not impl for base class")
     
     def change_to_temp (self, search:int):
@@ -28,6 +28,9 @@ class NoneKernelArg (KernelArg):
         
     def __repr__(self):
         return "None"
+
+    def rename (self, fr, to):
+        raise NotImplementedError("Rename on none kernel arg")
     
     def is_none (self):
         return True

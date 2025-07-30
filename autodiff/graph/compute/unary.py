@@ -1,7 +1,5 @@
-from typing import Dict, Callable, Optional, List
 from ...node import Node
 from enum import Enum
-from ...expr import NoneExpr
 import math
 from colored import stylize, fore, style
 
@@ -21,13 +19,14 @@ class UnaryNode (Node):
     __match_args__ = ("child", "op")
     def __init__(self, child:Node, op: UnaryOp):
         super().__init__([child], child.shape)
+        
         self.op = op
         
     def bck (self, grad:Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not a node!")
         
-        grad_dict: Dict[UnaryOp, Callable[[Node, Node], Optional[Node]]] = {
+        grad_dict = {
             # Derivatives
             UnaryOp.EXP2:  lambda grad, _: grad * math.log(2.0) * self,
             UnaryOp.LOG2:  lambda grad, parent: grad * math.log2(math.e) * parent.recip(),
@@ -49,8 +48,16 @@ class UnaryNode (Node):
         
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        size_str = stylize(total, fore("yellow") + style("bold"))
+        size_str = stylize(str(total), fore("yellow") + style("bold"))
         if self.kargs[0].is_none() or self.kres.is_none():
-            return f"{self.id} = {self.op} ({size_str}) ({self.child.id})"
+            return f"{self.id} = {self.op} ({size_str}) --> ({self.child.id})"
         else:
-            return f"{self.kres} = {self.op} ({size_str}) ({self.kargs[0]})"
+            return f"{self.kres} = {self.op} ({size_str}) --> ({self.kargs[0]})"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, UnaryNode):
+            return False
+
+        return \
+            self.op == other.op and \
+            self.child.node_eq(other.child)

@@ -1,10 +1,16 @@
-from .base import Node
+from .base import FuseBase, Node, AllocEntry
 from typing import Set
 
-def get_deps (node) -> Set[str]:
+def get_deps (node: Node|FuseBase|AllocEntry, step_proc:bool=False) -> Set[int]:
     from .base import FuseBase
     if isinstance(node, Node):
-        return set(node.kargs_child_ids())
+        if step_proc and (block := node.get_proc()) is not None:
+            ret = []
+            for n in block.procedure:
+                ret.extend(get_deps(n, True))
+            return set(ret) 
+        else:
+            return set(node.kargs_child_ids())
     elif isinstance(node, FuseBase):
         r = []
         for n in node.nodes:
@@ -13,10 +19,16 @@ def get_deps (node) -> Set[str]:
     else:
         raise TypeError(f"Invalid type in calc_deps: {type(node)}")
     
-def get_res (node) -> Set[str]:
+def get_res (node: Node|FuseBase|AllocEntry, step_proc:bool=False) -> Set[int]:
     from .base import FuseBase
     if isinstance(node, Node):
-        return set([node.id])
+        if step_proc and (block := node.get_proc()) is not None:
+            ret = []
+            for n in block.procedure:
+                ret.extend(get_deps(n, True))
+            return set(ret) 
+        else:
+            return set([node.id])
     elif isinstance(node, FuseBase):
         r = []
         for n in node.nodes:
@@ -119,3 +131,38 @@ def resolve_circular_dep (matches):
         del new_matches[k]
    
     return new_matches 
+
+def clean_toposort_res (matches, id_to_node):
+    # iterate over toposort, and filter sets that are 0 
+    matches = list(filter(lambda x: len(x) > 0, matches)) 
+
+    # for each layer, get all the definitions of the layer
+    definitions = []
+    for layer in matches:
+        res = []
+        for node in layer:
+            res.extend(get_res(id_to_node[node], step_proc=True))
+        res = set(res) # unique res
+        definitions.append(res)
+    for idx in reversed(range(len(matches))):
+        if idx == 0: 
+            continue
+
+        # track what should be moved
+        move = []
+        for node in matches[idx]:
+            n_deps = get_deps(id_to_node[node], step_proc=True)
+            if definitions[idx-1].intersection(n_deps):
+                continue
+            move.append(node)
+
+        # move to previous layer
+        for node in move:
+            matches[idx].remove(node)
+            matches[idx-1].add(node)
+
+    # iterate over toposort, and filter sets that are 0 
+    matches = list(filter(lambda x: len(x) > 0, matches)) 
+    
+    return matches
+            

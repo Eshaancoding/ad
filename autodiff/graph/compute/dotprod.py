@@ -21,10 +21,18 @@ class DotProdNode (Node):
     def __repr__ (self):
         l_shape = self.children_shapes[0]
         r_shape = self.children_shapes[1]
-        
+
         size_str = f"{stylize(l_shape, fore("yellow") + style("bold"))} x {stylize(r_shape, fore("yellow") + style("bold"))}"
         
         if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
             return f"{self.id} = Dot prod {size_str} --> ({self.left.id}, {self.right.id})"
         else:
             return f"{self.kres} = Dot prod {size_str} --> ({self.kargs[0]}, {self.kargs[1]})"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, DotProdNode):
+            return False
+
+        return \
+            self.left.node_eq(other.left) and \
+            self.right.node_eq(other.right)

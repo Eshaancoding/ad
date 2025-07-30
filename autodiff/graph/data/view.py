@@ -21,7 +21,7 @@ class ViewNode (Node):
             for d in input_dim:
                 if d != -1:
                     input_size *= d
-            
+
             assert total_size % input_size == 0, "Can't fill in -1"
             inferred_dim = total_size // input_size
 
@@ -39,3 +39,11 @@ class ViewNode (Node):
 
     def __repr__ (self):
         return f"{self.id} = View from {self.children_shapes[0]} to {self.shape} --> ({self.child.id})"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, ViewNode):
+            return False
+
+        return \
+            self.shape == other.shape and \
+            self.child.node_eq(other.child)

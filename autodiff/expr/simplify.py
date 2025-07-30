@@ -18,6 +18,7 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
         case Mult(_ as node, Val(Constant(1))):
             return simpl_expr_inner(node, size)
         
+
         # 1 * _ --> _
         case Mult(Val(Constant(1)), _ as node):
             return simpl_expr_inner(node, size)
@@ -116,7 +117,7 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
         case Remainder(_ as val, Val(Constant(_ as s))) if size is not None:
             if s == size:
                 return simpl_expr_inner(val, size)
-            
+
         # If the size of the command is given, then we can do a simple simplification
         # ((Global >> 7) & 3) when we know size is 512
         # In this case, we can simplify this expr to Global >> 7, as we know the max is 511, and 511 >> 7 is always <= 3
@@ -134,8 +135,6 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
                     case ShiftRight(Global(), Val(Constant(_ as c))):
                         if ((size-1) >> c) <= s:
                             return simpl_expr_inner(val, size) 
-        
-         
         case _:
             pass
         

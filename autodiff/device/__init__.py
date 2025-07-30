@@ -3,4 +3,4 @@ class Device ():
         return None
     
     def execute (self, proc):
-        return NotImplementedError("Device not execute error")
+        raise NotImplementedError("Device not execute error")

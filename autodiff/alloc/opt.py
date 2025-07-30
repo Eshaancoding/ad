@@ -57,7 +57,7 @@ def temp_opt (proc: Proc):
                 for node in n.nodes:
                     step_node(node)                    
             elif isinstance(n, Node):
-                if (p := n.get_proc()):
+                if (p := n.get_proc()) is not None:
                     available.append([])
                     step_proc(p) 
                     available.pop()
@@ -67,7 +67,7 @@ def temp_opt (proc: Proc):
     step_proc(proc)
 
     # change for matrix
-    def change_id (node: Node):
+    def change_id (node: Node, _):
         if isinstance(node, Node):
             for to, fr in matches.items():
                 node.rename(fr, to)
@@ -75,7 +75,7 @@ def temp_opt (proc: Proc):
     proc.walk(change_id) 
     
     # remove the allocs and deallocs
-    def remove_allocs_deallocs (node: Node):
+    def remove_allocs_deallocs (node: Node, _):
         if isinstance(node, AllocEntry):
             if node.id in matches.values():
                 return None

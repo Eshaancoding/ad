@@ -11,7 +11,7 @@ def format_node (n: Node, visited: Dict[int, int], level):
     if level is not None:
         if level == 0:
             return "", visited
-    
+
     s = str(n) + "\n"
     if (block := n.get_block()) is not None:
         s += indent(format_graph(block.nodes, level-1 if isinstance(level, int) else None)) + "\n"
@@ -26,9 +26,11 @@ def format_node (n: Node, visited: Dict[int, int], level):
             p = stylize(f"{child.id} = Intermediate", fore("cyan"))
         s += indent(p)
         s += "\n"
+
     return s, visited
 
-def format_graph (n, level):
+
+def format_graph(n, level):
     res = ""
     if isinstance(n, list) and len(n) > 0 and isinstance(n[0], Node):
         visited = {}
@@ -40,8 +42,9 @@ def format_graph (n, level):
         raise TypeError(f"Invalid type {type(n)} in format graph")
     return res
 
-def print_graph (n):
+def print_graph(n):
     """
-    Note that print graph will show concat node, even though it's folded at kernalize.
+    Note that print graph will show concat node, even though it's folded
+    at kernalize.
     """
     print(format_graph(n, None))

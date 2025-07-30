@@ -114,6 +114,8 @@ def make_res_arg (kern_id:int, is_global:bool, shape:list) -> KernelArg:
 def calc_exprs (node: Node, _):
     match node:
         case DotProdNode() as n:
+            assert n.children_datacmds is not None
+
             # calc left
             n.kargs[0] = make_karg(
                 initial_dim=[X(), Y()],
@@ -138,6 +140,7 @@ def calc_exprs (node: Node, _):
 
         case BinaryNode() as n:
             size = math.prod(n.shape) 
+            assert n.children_datacmds is not None
 
             # calc left
             n.kargs[0] = make_karg(
@@ -163,6 +166,8 @@ def calc_exprs (node: Node, _):
             n.children_datacmds = None
 
         case ReduceNode() as n:
+            assert n.children_datacmds is not None
+
             # calc child
             n.kargs[0] = make_karg(
                 initial_dim=[X(), Y()],

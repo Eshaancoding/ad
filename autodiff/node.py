@@ -8,12 +8,12 @@ class Node:
     ############################################################
     ## Derived methods/init
     # TODO: Add res expr and shape to super().__init__()
-    def __init__(self, children, shape:List[int]):
+    def __init__(self, children, shape:List[int], id_override:Optional[int] = None):
         from autodiff import context
 
-        self.id = context.get_id()
+        self.id = context.get_id() if id_override is None else id_override
         self.children_shapes: List[List[int]] = []
-        self.children_datacmds: List[List[Node]] = [] # will be only datacmds nodes
+        self.children_datacmds: Optional[List[List[Node]]] = [] # will be only datacmds nodes
         self.kargs: List[KernelArg] = []
         self.kres: KernelArg = NoneKernelArg() # result of the kernel argumnet; Filled at kernalize
         for ch in children:
@@ -22,26 +22,27 @@ class Node:
             
             # this shape could change (especially at kernalize). Save the deepcopy of shape and use this shape
             # One tensor can be represented in multiple dimensions/views (depends on the children exprs)
-            self.children_shapes.append(deepcopy(ch.shape)) 
-            
+            self.children_shapes.append(deepcopy(ch.shape))
+
             # fill in children datacmds. This is an internal variable needed at kernalize
             self.children_datacmds.append([])
-            
             # fill in kargs. Filled in at kernalize (uses children_datacmds)
             self.kargs.append(NoneKernelArg())
-            
+
             # as we are creating nodes, we record the latest node being changed within the context
             # as we go through the computation core, the order of the nodes being changed will also be recorded
             # and being recorded into a procedure
             context.remove_from_dep(ch)
+        
         context.add_to_dep(self)
+        
 
         # set the self.left, self.right, or self.child at children
         if len(children) == 1:
-            self.child = children[0]
+            self.child: Node = children[0]
         elif len(children) == 2:
-            self.left = children[0]
-            self.right = children[1]
+            self.left: Node = children[0]
+            self.right: Node = children[1]
         elif len(children) != 0:
             raise TypeError("Children length is invalid (expected one or two)")
         
@@ -52,13 +53,25 @@ class Node:
     
     def __repr__ (self) -> str:
         raise NotImplementedError
+
+    def node_eq (self, other) -> bool:
+        """
+        compares equality of node. Should be used before kernalize
+        Shouldn't compare resultant id; just the structure + child checks
+        """
+        raise NotImplementedError
     
     ############################################################
     ## Other methods
     # Calls backend 
     def backward (self):
-        from .graph import ConstantNode
+        from .graph import ConstantNode 
         self.bck(ConstantNode(1.0, self.shape))
+
+    # Keep: add the result to dep list
+    def keep (self):
+        from .context import context
+        context.add_dep_list(self.id)
     
     # helper for binary ops
     def _to_node (self, node, dim: List[int]):
@@ -87,6 +100,22 @@ class Node:
             return [self.child]
         else:
             return []
+
+    def map_children (self, func: Callable):
+        """
+        map children function (in case to set self.left, self.right, self.child, etc.)
+        If func returns None, it is assumed that it retains the original node (can't delete nodes)
+        Func should accept node as input 
+        """
+
+        if hasattr(self, "left") and hasattr(self, "right"):
+            if isinstance(res := func(self.left), Node):
+                self.left = res
+            if isinstance(res := func(self.right), Node):
+                self.right = res
+        elif hasattr(self, "child"):
+            if isinstance(res := func(self.child), Node):
+                self.child = res
         
     # gets the children ids from kwargs (used often at linearize, after kernalize operation is done)
     def kargs_child_ids (self, filter_temp=False):
@@ -94,12 +123,12 @@ class Node:
         for k in self.kargs:
             r.extend(k.get_ids(filter_temp)) 
         return list(set(r))
-    
+
     # test on whether node are equal to each other
     def id_eq (self, other):
         assert isinstance(other, Node), "id eq input invalid"
         return self.id == other.id
-    
+
     # get whether node has a block
     def get_block (self):
         if hasattr(self, "block"):
@@ -120,13 +149,19 @@ class Node:
     def rename (self, fr:int, to:int):
         for idx in range(len(self.kargs)):
             self.kargs[idx].rename(fr, to)
-        self.kres.rename(fr, to)        
+        if not self.kres.is_none(): # Tensor kres can be None
+            self.kres.rename(fr, to)        
+
+        # replace id
+        if self.id == fr:
+            self.id = to
             
     # set to temp (ideally, should be hidden from user); at kernalize
     def change_to_temp (self, search:int):
         for idx in range(len(self.kargs)):
             self.kargs[idx].change_to_temp(search)
-        self.kres.change_to_temp(search)
+        if not self.kres.is_none(): # Tensor kres can be None
+            self.kres.change_to_temp(search)
 
     ############################################################
     ## Binary operations (+, *, -, /, @ matmul)
@@ -142,41 +177,62 @@ class Node:
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
-    
+
     def __rmul__ (self, other):
         return self.__mul__(other)
-    
+
     def __sub__(self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape) * -1.0)
         return BinaryNode(a, b, BinaryOp.ADD)
-    
+
     def __rsub__(self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self._to_node(other, self.shape), self * -1.0)
         return BinaryNode(a, b, BinaryOp.ADD)
-    
+
     def __truediv__(self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape).recip())
         return BinaryNode(a, b, BinaryOp.MULT)
-    
+
     def __rtruediv__(self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self.recip(), self._to_node(other, self.shape))
         return BinaryNode(a, b, BinaryOp.MULT)
-    
+
     def __neg__ (self):
         return self.__mul__(-1.0)
-    
+
     def __matmul__ (self, other):
         from .graph import DotProdNode
         return DotProdNode(self, self._to_node(other, None))
-    
+
     def __rmatmul__ (self, other):
         from .graph import DotProdNode
         return DotProdNode(self._to_node(other, None), self)
-    
+
+    # in place opeartions +=, -=, *=, /=
+    def __iadd__ (self, other):
+        from .graph import BinaryNode, BinaryOp, try_broadcast
+        a, b = try_broadcast(self, self._to_node(other, self.shape), only_right_broadcast=True)
+        return BinaryNode(a, b, BinaryOp.ADD, in_place=True)
+
+    def __isub__ (self, other):
+        from .graph import BinaryNode, BinaryOp, try_broadcast
+        a, b = try_broadcast(self, self._to_node(other, self.shape) * -1.0, only_right_broadcast=True)
+        return BinaryNode(a, b, BinaryOp.ADD, in_place=True)
+
+    def __imult__ (self, other):
+        from .graph import BinaryNode, BinaryOp, try_broadcast
+        a, b = try_broadcast(self, self._to_node(other, self.shape), only_right_broadcast=True)
+        return BinaryNode(a, b, BinaryOp.MULT, in_place=True)
+
+    def __itruediv__ (self, other):
+        from .graph import BinaryNode, BinaryOp, try_broadcast
+        a, b = try_broadcast(self, self._to_node(other, self.shape).recip(), only_right_broadcast=True)
+        return BinaryNode(a, b, BinaryOp.MULT, in_place=True)
+
     ############################################################
     ## Comparison operations
     def __eq__(self, other):
@@ -236,7 +292,7 @@ class Node:
         
     def pow3 (self):
         return self * self.pow2()
-        
+
     def powf (self, p: float):
         if p == 2.0:
             return self.pow2()
@@ -244,14 +300,14 @@ class Node:
             return self.pow3()
         else:
             return (p * self.log2()).exp2()
-        
+
     ############################################################
-    ## Data Manipulation operations
+    # Data Manipulation operations
     def broadcast (self, dim: int, size: int):
         from .graph import BroadcastNode
         assert self.shape[dim] == 1, "Broadcast dim invalid"
         return BroadcastNode(self, dim, size)
-    
+
     def view (self, target_dim: list[int]):
         from .graph import ViewNode
         # handle -1 dim 

@@ -17,3 +17,9 @@ class ContigiousNode (Node):
             return f"{self.id} = Contigious ({self.child.id})"
         else:
             return f"{self.kres} = Contigious ({self.child.id}: {self.kargs[0]})"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, ContigiousNode):
+            return False
+
+        return self.child.node_eq(other.child)

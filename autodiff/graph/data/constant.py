@@ -12,3 +12,10 @@ class ConstantNode (Node):
     
     def __repr__ (self) -> str:
         return f"{self.id} = Const(val: {self.constant}, dim: {self.shape})"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, ConstantNode):
+            return False
+        
+        return self.constant == other.constant and \
+               self.shape == other.shape

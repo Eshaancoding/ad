@@ -1,16 +1,17 @@
 from ..graph import Node
 from ..context import Context
 from . import FuseBase
-from .helper import resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
+from .helper import clean_toposort_res, resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
+from typing import Tuple, Dict
+from pprint import pprint
 
-def fuse_across (id_to_node, toposort_res, fuse_op: FuseBase) -> int:
+def fuse_across (id_to_node, toposort_res, fuse_op: FuseBase) -> Tuple[Dict, int]:
     from ..context import context
     ch = 0
     for i in range(len(toposort_res)-1):
         layer_one = toposort_res[i] 
         layer_two = toposort_res[i+1]
          
-        # ---- Find potential matches ---- 
         # iterate over first node
         matches = {}
         for id_one in layer_one:
@@ -58,6 +59,5 @@ def fuse_across (id_to_node, toposort_res, fuse_op: FuseBase) -> int:
         ch += len(matches)
         
     # iterate over toposort, and filter sets that are 0 
-    toposort_res = list(filter(lambda x: len(x) > 0, toposort_res)) 
-        
+    toposort_res = clean_toposort_res(toposort_res, id_to_node)
     return toposort_res, ch

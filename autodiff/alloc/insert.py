@@ -1,19 +1,17 @@
 from . import *
 from math import prod
-from typing import Dict, Tuple
+from typing import Dict, Set, Tuple
 from ..fusion import FuseBase
 from ..fusion.helper import get_deps, get_res
+from pprint import pprint 
 
-# TODO: Make sure this supports blocks within blocks (if, for, etc.)
 # returning fusebase as it's helpful for the future alloc opt: fusion temp
-def insert_alloc (proc: Proc) -> Dict[int, FuseBase]:
-    # NOTE: Doesn't support fusion within a fusion
-
+def insert_alloc (main_proc: Proc) -> Dict[int, FuseBase]:
     # key: [idx from proc, fuse_idx for fusebase (if applicable. Else none)]
     # value: idx to insert
-    insert_locs: List[Tuple[Location, AllocEntry]] = []
-    dealloc_locs: Dict[str, Tuple[Location, DeallocEntry]] = {}
-    tracker: Dict[str, bool] = {}
+    insert_locs: Dict[int, Tuple[AllocEntry, Location]] = {}
+    dealloc_locs: Dict[int, Tuple[Location, DeallocEntry]] = {}
+    tracker: Dict[int, bool] = {}
     
     fused_ids_to_f: Dict[int, FuseBase] = {}
     proc_ids_to_p: Dict[int, Proc] = {}
@@ -27,11 +25,16 @@ def insert_alloc (proc: Proc) -> Dict[int, FuseBase]:
 
                 # record res allocations 
                 r = list(get_res(n))[0]
-                
-                insert_locs.append((
-                    loc,
-                    AllocEntry(n.id, prod(n.shape))
-                ))
+
+                     
+                if r in insert_locs:
+                    insert_locs[r][0].size = max(insert_locs[r][1].size, prod(n.shape)) # if reused, ensure max shape 
+                elif r in id_to_size:
+                    # declared in a tensor if not declared in insert_locs but declared in id_to_size
+                    assert id_to_size[r] == prod(n.shape), "In place operation dimension are not equal when inserting alloc"
+                else:
+                    insert_locs[r] = (loc, AllocEntry(r, prod(n.shape)))
+
                 tracker[n.id] = False
                 
                 id_to_size[n.id] = prod(n.shape)
@@ -63,9 +66,9 @@ def insert_alloc (proc: Proc) -> Dict[int, FuseBase]:
                     id_to_size[p.id] = prod(p.shape)
                     continue
                 
-                if (proc := p.get_proc()):
+                if p.get_proc() is not None:
                     proc_ids_to_p[proc.id] = p.proc
-                    step_proc(proc, proc.id) 
+                    step_proc(p.proc, proc.id) 
                     continue
 
                 step_node(
@@ -75,7 +78,7 @@ def insert_alloc (proc: Proc) -> Dict[int, FuseBase]:
             else:
                 raise TypeError(f"Invalid type: {type(p)}")
                 
-    step_proc(proc)
+    step_proc(main_proc)
     
     tracker = dict(filter(lambda kv: not kv[1], tracker.items()))
     tracker = tracker.keys()
@@ -85,20 +88,20 @@ def insert_alloc (proc: Proc) -> Dict[int, FuseBase]:
     # + repeat opt (and general node optimization)
     for var in tracker:
         dealloc_locs[var] = (
-            Location(len(proc.procedure), None, None),
+            Location(len(main_proc.procedure), None, None),
             DeallocEntry(var, id_to_size[var])
         )
-    
+
     # now, actually insert alloc
     insert_counter: Dict[FuseBase, int] = {}
     total = list(dealloc_locs.values())
-    total.extend(insert_locs)
+    total.extend(insert_locs.values())
     total = sorted(total, key=lambda x: (
         s if (s := x[0].proc_id) is not None else -1,
         s if (s := x[0].fused_id) is not None else -1,
         x[0].loc
     ))    
-    
+
     for (loc, entry) in total:
         # get insert counter
         base = loc.base()
@@ -114,7 +117,7 @@ def insert_alloc (proc: Proc) -> Dict[int, FuseBase]:
         elif loc.proc_id is not None:
             proc_ids_to_p[loc.proc_id].insert(loc.loc + offset, entry)
         else:
-            proc.insert(loc.loc + offset, entry)
+            main_proc.insert(loc.loc + offset, entry)
              
         # incr 
         insert_counter[base] += 1

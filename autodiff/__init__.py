@@ -1,3 +1,4 @@
+from autodiff.opt import dep_opt, mem_opt, repeat_opt
 from .context import context
 from math import prod
 from typing import Callable
@@ -6,7 +7,7 @@ from typing import List
 
 ##########################################
 ## Autodiff operations
-def concat (nodes: List[Tensor], dim: int) -> Tensor:
+def concat (nodes: List[Tensor], dim: int) -> Tensor|ConcatNode:
     # filter nodes by shape if none
     l = []    
     for n in nodes:
@@ -25,7 +26,6 @@ def dot (left: Node, right: Node) -> Node:
     return DotProdNode(left, right)
 
 def execute ():
-    from .opt import opt_node
     # from .core.kernelize import kernalize
     from .kernalize.kernalize import kernalize
     from .linearize import linearize
@@ -36,29 +36,35 @@ def execute ():
 
     # lock procedure
     context.lock_proc = True
-    
-    # apply graph-level optimizations'
+
+    # perform optimizations 
+    dep_opt(context)    # delete nodes that are not needed or computed
+
+    repeat_opt(context) # re-use nodes already computed
+
+    # apply graph-level optimizations (ex: constant simplification)
     # context.apply_per_node(opt_node)
-    
+
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
-    # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented 
+    # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented
     kernalize(context)
-    
+
     # Linearize + fusion
-    proc = linearize(context.main_proc()) 
-    
+    proc = linearize(context.main_proc())
+
+    proc = mem_opt(proc)
+
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
     # see if you can make fusion better here as well (test)
-    
     # Apply allocations + opts on allocs
     alloc(proc)
-    
-    # pprint(proc)
+
+    pprint(proc)
     
     # Send procedure to device to be executed
-    OpenCLDevice(cl.device_type.ALL).execute(proc)
+    # OpenCLDevice(cl.device_type.ALL).execute(proc)
 
 ##########################################
 ## Control flow 
@@ -79,3 +85,12 @@ def print_graph ():
     Note that print graph will show concat node, even though it's folded at kernalize.
     """
     context.print_graph()
+
+def set_lenient_dep ():
+    """
+    lenient_dep will add gradients to dependencies.
+    If set to False, even if you call .backward(),
+    it won't calculate any gradients unless it is explicitly used in another computation.
+    (ex: performing gradient update with the original tensor)
+    """
+    context.lenient_dep = True

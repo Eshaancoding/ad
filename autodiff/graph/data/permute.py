@@ -31,3 +31,11 @@ class PermuteNode (Node):
 
     def __repr__ (self):
         return f"{self.id} = Permute {self.permute_to} --> {self.child.id}"
+
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, PermuteNode):
+            return False
+
+        return \
+            self.permute_to == other.permute_to and \
+            self.child.node_eq(other.child)

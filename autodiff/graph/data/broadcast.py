@@ -18,11 +18,20 @@ class BroadcastNode (Node):
     def bck (self, grad:Node):
         if not isinstance (grad, Node):
             raise TypeError("Grad is not node!")
-        
+
         self.child.bck(grad.sum(self.dim))
         
     def __repr__ (self) -> str:
         return f"{self.id} = Broadcast dim {self.dim} to size {self.size} --> {self.child.id}"
+    
+    def node_eq(self, other) -> bool:
+        if not isinstance(other, BroadcastNode):
+            return False
+
+        return \
+            self.dim == other.dim and \
+            self.size == other.size and \
+            self.child.node_eq(other.child)
         
 ###########################################
 ## Functions to automatically create broadcast node when needed
@@ -58,9 +67,9 @@ def make_broadcast_node(n: Node, target_dim: list[int]) -> Node:
 
     return ret_n
 
-def try_broadcast(a: Node, b: Node) -> tuple[Node, Node]:
+def try_broadcast(a: Node, b: Node, only_right_broadcast:bool = False) -> tuple[Node, Node]:
     from .constant import ConstantNode
-
+    
     # Normalize scalar tensors
     if len(a.shape) == 0 and len(b.shape) > 0:
         a = a.unsqueeze(0)
@@ -83,7 +92,7 @@ def try_broadcast(a: Node, b: Node) -> tuple[Node, Node]:
         else:
             is_a_broadcast = a_dim_len < b_dim_len
 
-        if is_a_broadcast:
+        if is_a_broadcast and not only_right_broadcast:
             return make_broadcast_node(a, b.shape), b
         else:
             return a, make_broadcast_node(b, a.shape)
