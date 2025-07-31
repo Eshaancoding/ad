@@ -27,8 +27,14 @@ class ADCLContext ():
                 self.ctx, 
                 cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR if content is not None else cl.mem_flags.READ_WRITE, 
                 size=size * np.dtype(np.float32).itemsize,
-                hostbuf=np.array(content, dtype=np.float32) if content is not None else None
+                #hostbuf=np.array(content, dtype=np.float32) if content is not None else None
+                hostbuf=None
             )
+    
+            if content is not None: 
+                cl.enqueue_copy(self.command_queue, bf, np.array(content, dtype=np.float32))
+                print("WRITING CONTENT")
+            
             self.buffers[buf_id] = bf
             self.size_dict[buf_id] = size
             return bf
