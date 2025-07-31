@@ -27,12 +27,13 @@ class OpenCLDevice (Device):
                 execute_cmd(self.context, cmd)
         
     def execute (self, proc: Proc):
+        self._exec_proc(proc, warm_up=True) 
 
         start = time()
         self._exec_proc(proc) 
         self.context.finish() # todo: experiment whether you can enqueue copy from the dep list (put this cmd after...)
         end = time()
-        print(f"==== EXECUTION TIME: {end - start} =====")
+        print(f"==== EXECUTION TIME: {end - start} seconds =====")
 
         #v = self.context.get_contents(1)
         #print(v)
