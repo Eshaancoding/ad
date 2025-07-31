@@ -27,6 +27,7 @@ class OpenCLDevice (Device):
                 execute_cmd(self.context, cmd)
         
     def execute (self, proc: Proc):
+        print("warmup")
         self._exec_proc(proc, warm_up=True) 
 
         start = time()
