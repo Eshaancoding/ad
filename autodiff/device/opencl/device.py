@@ -30,6 +30,7 @@ class OpenCLDevice (Device):
         print("warmup")
         self._exec_proc(proc, warm_up=True) 
 
+        print("starting")
         start = time()
         self._exec_proc(proc) 
         self.context.finish() # todo: experiment whether you can enqueue copy from the dep list (put this cmd after...)
