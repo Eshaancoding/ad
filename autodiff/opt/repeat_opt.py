@@ -1,13 +1,14 @@
 from typing import Dict
 from autodiff.context import Context
 from autodiff.node import Node
+from autodiff.helper import walk_graph
 
 def _intern_repeat_opt (context: Context):
     
     pot_nodes: Dict[int, Node] = {}
     deps = context.deps
     
-    def track_nodes (node: Node):
+    def track_nodes (node: Node, _visited):
         # check if dep two node
         is_dep_two = len(node.children()) > 0
         for n in node.children():
@@ -15,13 +16,13 @@ def _intern_repeat_opt (context: Context):
 
         if is_dep_two:
             pot_nodes[node.id] = node
-        else:
-            for n in node.children():
-                track_nodes(n) 
 
         return node
 
-    context.procedure[0].walk(track_nodes)
+    context.procedure[0] = walk_graph(
+        context.procedure[0],
+        track_nodes
+    )
 
     # find matches (O(n^2), could be improved)
     items_potnodes = pot_nodes.items()
@@ -36,15 +37,11 @@ def _intern_repeat_opt (context: Context):
                     matches[node_one_id] = node_two_id
     
     # given matches, replace
-    def replace_node_walk (node: Node):
+    def replace_node (node: Node, _):
         # check for matches
         for to_replace, to_search in matches.items():
             if node.id == to_search:
                 return pot_nodes[to_replace]
-
-        
-        node.map_children(replace_node_walk)
-
         return node
 
     #TODO: Fix where the node to be replaced is a parent node
@@ -60,14 +57,18 @@ def _intern_repeat_opt (context: Context):
     execute()
     """
 
-    context.procedure[0].walk(replace_node_walk)
+    context.procedure[0] = walk_graph(context.procedure[0], replace_node)
+    
 
     return len(matches)
 
 # A somewhat brute force approach to this problem, but oh well...
 def repeat_opt (context: Context):
     d = 1
-    s = 0
+    itr = 0
     while d > 0:
         d = _intern_repeat_opt(context)
-        s += d
+        itr += 1
+        if itr >= 100:
+            print("Repeat opt max iteration passed") 
+            break

@@ -49,6 +49,8 @@ def fill_child_datacmds (node: Node, _):
                     n.children_datacmds[1].append(cmd)
                 if not did_repl:
                     break
+
+            return n
         case ReduceNode() | UnaryNode() | ContigiousNode() as n:
             # handle child node
             while True:
@@ -57,6 +59,9 @@ def fill_child_datacmds (node: Node, _):
                     n.children_datacmds[0].append(cmd)
                 if not did_repl:
                     break
+
+            return n
+    return node
                
 def make_karg (initial_dim, child: Node, data_cmds, shape, size:Optional[int]=None):
     if isinstance(child, ConstantNode):
@@ -199,10 +204,10 @@ def calc_exprs (node: Node, _):
 
             # remove data cmds
             n.children_datacmds = None
+
+    return node
         
 def kernalize (context: Context):
     for idx in range(len(context.procedure)):
         context.procedure[idx].nodes = walk_graph(context.procedure[idx].nodes, fill_child_datacmds)
         context.procedure[idx].nodes = walk_graph(context.procedure[idx].nodes, calc_exprs)
-                
-                

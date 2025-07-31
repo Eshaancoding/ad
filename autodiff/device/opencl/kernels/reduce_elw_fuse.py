@@ -26,7 +26,7 @@ def lower_reduce_elw_fuse (fused_cmd: ReduceElwFuse):
     return res        
 
 def execute_reduce_elw_fuse (context: ADCLContext, cmd: ReduceElwFuse):
-    name = f"reduce_elw_fuse_{context.get_prog_id()}"
+    name = f"reduce_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
     reduce_node = cmd.get_reduce()
     
@@ -77,7 +77,7 @@ __kernel void {name} (
   
     program(
         context.command_queue,        # Command queue
-        (local_size * vec_size, ),     # global size 
-        (local_size, ),               # local size
+        (int(local_size * vec_size), ),     # global size 
+        (int(local_size), ),               # local size
         *args                         # arguments
     )

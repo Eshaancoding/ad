@@ -1,12 +1,12 @@
 from autodiff import Tensor, execute, print_graph, concat, ir_for
+from autodiff.graph.data.constant import ConstantNode
 from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder, SGD
 from autodiff.nn.transformer import TransformerEncoder
 
-x = Tensor.randn([8,4]) 
-y = x.exp2().log2()
-z = x.exp2() + 3
-
-y.keep()
+x = ConstantNode(2.0, [1,2])
+y = ConstantNode(3.0, [1,2])
+z = x * y
+z *= Tensor.randn([1,2])
 z.keep()
 
 execute()

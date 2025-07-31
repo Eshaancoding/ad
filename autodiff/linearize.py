@@ -2,9 +2,10 @@ from .context import Context
 from .node import Node
 from toposort import toposort
 from typing import Dict, List
-from .helper import walk_graph
+from .helper import walk_graph, benchmark
 from .fusion import *
 from .graph import ConcatNode, ConstantNode
+from time import time
 from .context import Block, Proc
 
 def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
@@ -23,6 +24,8 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             id_to_node[n.id] = n
         elif not isinstance(n, ConcatNode) and not isinstance(n, ConstantNode): 
             id_to_node[n.id] = n
+
+        return n
 
     walk_graph(proc.nodes, fill_id_to_node, walk_block=False)
 
@@ -67,7 +70,7 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
         DPElwFuse,
         ReduceElwFuse,
         ElwFuse,
-        Procedure
+        Procedure # fusing procedure takes a while...
     ]
     
     def fn_fuse (toposort_res, id_to_node, op, fuse_type):
@@ -88,14 +91,17 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             
     for op in fusion_ops:            
         if op().type == FuseType.ALL:
+            st = time()
             toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.WITHIN_LAYER) 
             toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.ACROSS_LAYER) 
+            end = time() 
+            print(f"Fuse {op.__name__} took: ", end - st)
         else:
-            toposort_res = fn_fuse(toposort_res, id_to_node, op, op().type) 
+            toposort_res = benchmark(lambda: fn_fuse(toposort_res, id_to_node, op, op().type), name=f"Fuse Op: {op.__name__}")
 
     try:
-        assert len(toposort_res) == 1, "Didn't fully capture procedure"
-        assert len(toposort_res[0]) == 1, "Didn't fully capture procedure"
+        assert len(toposort_res) == 1, "Didn't fully capture procedure."
+        assert len(toposort_res[0]) == 1, "Didn't fully capture procedure. "
         node = id_to_node[list(toposort_res[0])[0]]
         assert isinstance(node, FuseBase), "First node is not a FuseBase object"
     except Exception as e:

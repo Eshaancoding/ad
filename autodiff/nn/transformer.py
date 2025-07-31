@@ -85,5 +85,5 @@ class TransformerEncoder (Module):
             for _ in range(num_layers)
         ])
         
-    def forward (self, x):
+    def forward (self, x) -> Node:
         return self.seq(x)

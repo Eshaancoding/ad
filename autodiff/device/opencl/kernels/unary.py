@@ -32,7 +32,7 @@ def lower_unary (cmd: UnaryNode):
     return f"{lower_karg(cmd.kres)} = {expr};"
 
 def execute_unary (context: ADCLContext, cmd: UnaryNode):
-    name = f"unary_{context.get_prog_id()}"
+    name = f"unary_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program

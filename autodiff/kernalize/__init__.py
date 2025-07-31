@@ -1,4 +1,4 @@
-from typing import List
+from typing import Callable, List, Optional
 from ..expr import *
 from colored import stylize, fore
 
@@ -16,7 +16,7 @@ class KernelArg:
         raise NotImplementedError("Kernel arg get_ids not implemented")
     
     # helper functions across the opt (after linearize) that changes kernel arg
-    def rename (self, fr:int, to:int):
+    def rename (self, fr, to, change_access: Optional[Callable[[Expression], Expression]] = None):
         raise NotImplementedError("rename not impl for base class")
     
     def change_to_temp (self, search:int):
@@ -29,7 +29,7 @@ class NoneKernelArg (KernelArg):
     def __repr__(self):
         return "None"
 
-    def rename (self, fr, to):
+    def rename (self, fr, to, change_access: Optional[Callable[[Expression], Expression]] = None):
         raise NotImplementedError("Rename on none kernel arg")
     
     def is_none (self):
@@ -55,9 +55,11 @@ class KMatrix (KernelArg):
         else:
             return [self.id]
     
-    def rename (self, fr, to):
+    def rename (self, fr, to, change_access: Optional[Callable[[Expression], Expression]] = None):
         if self.id == fr:
             self.id = to
+            if change_access is not None:
+                self.access = change_access(self.access)
             
     def change_to_temp(self, search):
         if self.id == search:
@@ -82,9 +84,9 @@ class KConcat (KernelArg):
         a.extend(self.karg_two.get_ids(filter_temp))
         return list(set(a)) 
     
-    def rename(self, fr, to):
-        self.karg_one.rename(fr, to)
-        self.karg_two.rename(fr, to)
+    def rename (self, fr, to, change_access: Optional[Callable[[Expression], Expression]] = None):
+        self.karg_one.rename(fr, to, change_access)
+        self.karg_two.rename(fr, to, change_access)
         
     def change_to_temp(self, search):
         self.karg_one.change_to_temp(search)
@@ -101,7 +103,7 @@ class KConstant (KernelArg):
     def get_ids (self, filter_temp=False):
         return []
     
-    def rename(self, fr, to):
+    def rename (self, fr, to, change_access: Optional[Callable[[Expression], Expression]] = None):
         pass
     
     def change_to_temp(self, search):

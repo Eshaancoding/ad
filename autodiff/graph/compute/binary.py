@@ -9,7 +9,7 @@ class BinaryOp (Enum):
     MULT=2
 
 class BinaryNode (Node):
-    __match_args__ = ("left", "right", "op")
+    __match_args__ = ("left", "right", "op", "in_place")
     def __init__(self, left: Node, right: Node, op: BinaryOp, in_place:bool = False):
         assert left.shape == right.shape, f"Dimensional mismatch at binary! {left.shape}: {left} and {right.shape}: {right}"
 

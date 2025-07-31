@@ -15,7 +15,7 @@ def lower_binary (cmd: BinaryNode):
     return f"{lower_karg(cmd.kres)} = {lower_karg(cmd.kargs[0])} {op_str} {lower_karg(cmd.kargs[1])};"
 
 def execute_binary (context: ADCLContext, cmd: BinaryNode):
-    name = f"binary_{context.get_prog_id()}"
+    name = f"binary_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program

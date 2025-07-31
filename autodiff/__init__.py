@@ -1,9 +1,12 @@
+from autodiff.fusion.base import FuseBase
 from autodiff.opt import dep_opt, mem_opt, repeat_opt
+from autodiff.opt.simplify import simpl_node
 from .context import context
 from math import prod
 from typing import Callable
 from .graph import Tensor, ConcatNode, Node
 from typing import List
+from .helper import benchmark, walk_graph
 
 ##########################################
 ## Autodiff operations
@@ -38,22 +41,22 @@ def execute ():
     context.lock_proc = True
 
     # perform optimizations 
-    dep_opt(context)    # delete nodes that are not needed or computed
-
-    repeat_opt(context) # re-use nodes already computed
+    benchmark(lambda: dep_opt(context), "dep_opt")    # delete nodes that are not needed or computed
+    benchmark(lambda: repeat_opt(context), "repeat_opt") # re-use nodes already computed
 
     # apply graph-level optimizations (ex: constant simplification)
-    # context.apply_per_node(opt_node)
+    benchmark(lambda: simpl_node(context), "simplify node")
 
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
     # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented
-    kernalize(context)
+    benchmark(lambda: kernalize(context), "kernalize")
 
     # Linearize + fusion
-    proc = linearize(context.main_proc())
+    proc = benchmark(lambda: linearize(context.main_proc()), "linearize")
 
-    proc = mem_opt(proc)
+    # perform memory optimization
+    proc = benchmark(lambda: mem_opt(proc), "mem opt")
 
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
@@ -61,10 +64,17 @@ def execute ():
     # Apply allocations + opts on allocs
     alloc(proc)
 
+    # assign program id for each node that is about to be executed
+    def assign_program_id (n: Node, _):
+        if isinstance(n, Node) or isinstance(n, FuseBase):
+            n.program_id = context.get_prog_id()
+        return n
+    proc.walk(assign_program_id, step_fused=False, step_proc=True)
+
     pprint(proc)
     
     # Send procedure to device to be executed
-    # OpenCLDevice(cl.device_type.ALL).execute(proc)
+    OpenCLDevice(cl.device_type.ALL).execute(proc)
 
 ##########################################
 ## Control flow 

@@ -5,7 +5,7 @@ from ..karg import *
 import numpy as np
 
 def execute_dotprod (context: ADCLContext, cmd: DotProdNode):
-    name = f"dotprod_{context.get_prog_id()}"
+    name = f"dotprod_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program

@@ -1,6 +1,8 @@
 from ..context import Proc
 from ..graph import *
 from colored import stylize, fore, style
+from ..helper import benchmark
+from autodiff.context import context
 
 @dataclass 
 class LocationBase:
@@ -54,7 +56,7 @@ class DeallocEntry (AllocCmds):
 def alloc (proc: Proc):
     from .insert import insert_alloc
     from .temp import temp_alloc
-    from .opt import temp_opt
+    from .tetris_opt import tetris_opt
     from .clean import temp_clean
 
     # first, insert all the allocations
@@ -63,10 +65,8 @@ def alloc (proc: Proc):
     from pprint import pprint 
 
     # Just continue to apply for every proc recursively
-    temp_alloc(proc, fused_ids_to_f)
-    
-    # count = 1
-    # while count > 0: 
-    #     # temp opt could be better... 
-    #     count = temp_opt(proc)
-    temp_clean(proc)
+    benchmark(lambda: temp_alloc(proc, fused_ids_to_f), "temp alloc")
+    benchmark(lambda: tetris_opt(proc), "tetris opt")
+    benchmark(lambda: temp_clean(proc), "temp clean")
+
+

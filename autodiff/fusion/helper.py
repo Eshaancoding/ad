@@ -102,7 +102,7 @@ def resolve_many_to_one (matches, id_to_node, debug=False):
             
             # debug
             if debug:
-                raise Exception(f"Multiple many to one matches")
+                print(f"Multiple many to one matches")
         
         for r in remove:
             del matches[r]

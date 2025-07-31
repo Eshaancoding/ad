@@ -38,6 +38,8 @@ def format_graph(n, level):
             formatted_str, visited = format_node(node, visited, level)
             res += stylize(str(idx), fore("green")) + ": "
             res += formatted_str
+    elif isinstance(n, list) and len(n) == 0:
+        return "[]"
     else:
         raise TypeError(f"Invalid type {type(n)} in format graph")
     return res

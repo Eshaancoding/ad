@@ -1,7 +1,6 @@
 from copy import deepcopy
 import math
-from .expr import Expression, NoneExpr
-from typing import List, Callable, Dict, Optional
+from typing import List, Optional
 from .kernalize import NoneKernelArg, KernelArg
 
 class Node:
@@ -68,8 +67,10 @@ class Node:
         from .graph import ConstantNode 
         self.bck(ConstantNode(1.0, self.shape))
 
-    # Keep: add the result to dep list
     def keep (self):
+        """
+        Adds the node into dep list
+        """
         from .context import context
         context.add_dep_list(self.id)
     
@@ -101,22 +102,6 @@ class Node:
         else:
             return []
 
-    def map_children (self, func: Callable):
-        """
-        map children function (in case to set self.left, self.right, self.child, etc.)
-        If func returns None, it is assumed that it retains the original node (can't delete nodes)
-        Func should accept node as input 
-        """
-
-        if hasattr(self, "left") and hasattr(self, "right"):
-            if isinstance(res := func(self.left), Node):
-                self.left = res
-            if isinstance(res := func(self.right), Node):
-                self.right = res
-        elif hasattr(self, "child"):
-            if isinstance(res := func(self.child), Node):
-                self.child = res
-        
     # gets the children ids from kwargs (used often at linearize, after kernalize operation is done)
     def kargs_child_ids (self, filter_temp=False):
         r = []

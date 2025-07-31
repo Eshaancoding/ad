@@ -16,17 +16,25 @@
 * ~~repeat opt!  ~~
     * ~~before fusion ideally (less nodes to fuse)~~
 
+* ~~Constant simplification~~
+
+* ~~Tetris optimization~~
+
+* ~~use program id, not node id (this is the problem with the OpenCL right now)~~
+
+============ then test nn ===========
+
 * Fix the backward issue for multihead attention
+    * check main.py currently
 
-* Tetris optimization
+* ~~make repeat_opt, mem_opt faster~~
+    * ~~in general, this entire process is kind of slow...~~
+    * ~~not sure if you can speed up the entire thing~~
+        * ~~(ideally pawning off to rust is a good idea)~~
 
-* use program id, not node id (this is the problem with the OpenCL right now)
-
-============= then test neural net ============= 
 ============ then test multihead att ===========
 
-* better opt node hehe
-    * constant simpl
+* maybe test if it actually like fucking works and numerical test it heheheheh
 
 ====== Then test with more tests (use pytest) ====== 
 * add more control

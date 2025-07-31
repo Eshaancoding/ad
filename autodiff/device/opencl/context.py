@@ -20,11 +20,6 @@ class ADCLContext ():
         self.programs: Dict[str, cl.Program] = {}
         self.programs_str: Dict[str, str] = {}
         self.size_dict: Dict[int, int] = {}
-        self.program_id = -1
-        
-    def get_prog_id (self) -> int:
-        self.program_id += 1
-        return self.program_id
         
     def alloc (self, buf_id: int, size: int, content:any=None) -> cl.Buffer:
         if buf_id not in self.buffers:
@@ -87,6 +82,3 @@ class ADCLContext ():
         for buf in self.buffers.values():
             buf.release()
         self.buffers.clear()
-        
-    def __del__ (self):
-        self.dealloc_all()

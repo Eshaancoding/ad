@@ -24,7 +24,7 @@ def lower_dp_elw_fuse (fused_cmd: DPElwFuse):
 
 def execute_dp_elw_fuse (context: ADCLContext, cmd: DPElwFuse):
     dpnode = cmd.get_dp()
-    name = f"dp_elw_fuse_{context.get_prog_id()}"
+    name = f"dp_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program

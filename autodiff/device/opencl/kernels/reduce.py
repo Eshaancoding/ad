@@ -14,7 +14,7 @@ def lower_reduce_op (op: ReduceOp, orig:str, new:str):
             return f"{orig} = max({orig}, {new});"
 
 def execute_reduce (context: ADCLContext, cmd: ReduceNode):
-    name = f"reduce_{context.get_prog_id()}"
+    name = f"reduce_{cmd.program_id}"
     args, program_args = lower_args(cmd)
     
     # construct program

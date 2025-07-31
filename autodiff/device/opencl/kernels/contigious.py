@@ -9,7 +9,7 @@ def lower_contigious (cmd: ContigiousNode):
     return f"{lower_karg(cmd.kres)} = {lower_karg(cmd.kargs[0])};"
 
 def execute_contigious (context: ADCLContext, cmd: ContigiousNode):
-    name = f"contigious_{context.get_prog_id()}"
+    name = f"contigious_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program

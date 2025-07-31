@@ -23,7 +23,7 @@ def lower_elwfuse (fused_cmd: ElwFuse):
     return res        
          
 def execute_elwfuse (context: ADCLContext, cmd: ElwFuse):
-    name = f"elwfuse_{context.get_prog_id()}"
+    name = f"elwfuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program
@@ -38,4 +38,4 @@ __kernel void {name} (
     
     # buffer args
     args = [context.get_buffer(buf_id) for buf_id in args]
-    program(context.command_queue, (prod(cmd.get_elw().shape), ), None, *args) 
+    program(context.command_queue, (prod(cmd.get_elw().shape), ), None, *args)
