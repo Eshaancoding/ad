@@ -25,7 +25,7 @@ class ADCLContext ():
         if buf_id not in self.buffers:
             bf = cl.Buffer(
                 self.ctx, 
-                cl.mem_flags.READ_WRITE | cl.mem_flags.COPY_HOST_PTR if content is not None else cl.mem_flags.READ_WRITE, 
+                cl.mem_flags.READ_WRITE, 
                 size=size * np.dtype(np.float32).itemsize,
                 #hostbuf=np.array(content, dtype=np.float32) if content is not None else None
                 hostbuf=None
