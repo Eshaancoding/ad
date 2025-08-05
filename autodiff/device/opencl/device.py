@@ -42,6 +42,9 @@ class OpenCLDevice (Device):
         self.buffers = {}
         self.buffers_size = {}
 
+        # for debugging
+        self.node_debug = {}
+
     def init (self, cmd):
         from .kernels import init_dotprod, init_unary, init_binary, init_reduce, init_contigious, init_elwfuse, init_dp_elw_fuse, init_reduce_elw_fuse
         match cmd:
@@ -63,6 +66,7 @@ class OpenCLDevice (Device):
 
         self.kernels[cmd.program_id] = kern
         self.funcs[cmd.program_id] = func
+        self.node_debug[cmd.program_id] = cmd
 
     def run (self, cmd):
         match cmd:
@@ -70,7 +74,12 @@ class OpenCLDevice (Device):
             case DeallocEntry(): pass
             case ForNode(): pass
             case _:
-                self.funcs[cmd.program_id]() # enqueue to buffer
+                try:
+                    self.funcs[cmd.program_id]() # enqueue to buffer
+                except Exception as e:
+                    print("**** ENCOUNTERED ERROR ****") 
+                    print(self.node_debug[cmd.program_id])
+                    raise e
 
     def _run_proc (self, proc: Proc, func: Callable, init:bool=False):
         for cmd in proc.procedure:
