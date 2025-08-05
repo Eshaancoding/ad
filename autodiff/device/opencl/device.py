@@ -1,5 +1,5 @@
 from .. import Device
-from ...context import Proc
+from ...context import Proc, context
 from ...alloc import AllocEntry, DeallocEntry
 from ...graph import *
 from ...fusion import *
@@ -40,6 +40,7 @@ class OpenCLDevice (Device):
         self.kernels = {}
         self.funcs = {} 
         self.buffers = {}
+        self.buffers_size = {}
 
     def init (self, cmd):
         from .kernels import init_dotprod, init_unary, init_binary, init_reduce, init_contigious, init_elwfuse, init_dp_elw_fuse, init_reduce_elw_fuse
@@ -47,6 +48,7 @@ class OpenCLDevice (Device):
             case AllocEntry():
                 if not cmd.is_temp:
                     self.buffers[cmd.id] = init_buffer(self.context, cmd.size, cmd.content)
+                    self.buffers_size[cmd.id] = cmd.size
                 return
             case DotProdNode(): kern, func = init_dotprod(self, cmd)
             case UnaryNode(): kern, func = init_unary(self, cmd)
@@ -91,6 +93,10 @@ class OpenCLDevice (Device):
         waitAll(self.queue)
 
         #a = read_buffer(self.queue, buf_three, 4)
+        # read buffers accordant to their dep list
+        #for dep in context.deps:
+        #    val = read_buffer(self.queue, self.buffers[dep], self.buffers_size[dep], None)
+        #    print(val)
 
 
     def __del__ (self):

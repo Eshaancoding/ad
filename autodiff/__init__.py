@@ -7,6 +7,7 @@ from typing import Callable
 from .graph import Tensor, ConcatNode, Node
 from typing import List
 from .helper import benchmark
+from time import time
 
 ##########################################
 ## Autodiff operations
@@ -76,7 +77,10 @@ def execute ():
     print(f"Num programs: {num_programs}")
 
     # Send procedure to device to be executed
+    print("executing...")
+    start = time()
     OpenCLDevice(CLDevice.GPU).execute(proc)
+    print(f"********* EXEC TIME: {(time() - start)*1000:.3f} ms **********") 
 
 ##########################################
 ## Control flow 
