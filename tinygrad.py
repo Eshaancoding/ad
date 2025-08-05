@@ -34,15 +34,15 @@ class Sigmoid:
 
 # Build model
 nn = Sequential(
-    Linear(128, 128),
+    Linear(512, 256),
     Sigmoid(),
-    Linear(128, 128),
+    Linear(256, 128),
     Sigmoid(),
 )
 
 print(nn.parameters())
 
-inp = Tensor.randn(2, 128)
+inp = Tensor.randn(2, 512)
 opt = SGD(nn.parameters(), lr=0.01)
 
 def f():
@@ -51,7 +51,7 @@ def f():
     loss = out.sum()  # or other loss as needed
     loss.backward()
     opt.step()
-    return 0.0
+    return
 
 # Optionally JIT the function for maximum performance (compiles forward+backward+step)
 @TinyJit
@@ -68,6 +68,4 @@ def loop_many_jit(n):
         f_jit()
 
 Tensor.training=True
-# Run the benchmarks
-#benchmark(lambda: loop_many(10000), name="Classic Tinygrad Forward/Backward/Step x10k")
-benchmark(lambda: loop_many_jit(10000), name="JIT Tinygrad Forward/Backward/Step x10k")
+benchmark(lambda: loop_many_jit(100_000), name="JIT Tinygrad Forward/Backward/Step x10k")
