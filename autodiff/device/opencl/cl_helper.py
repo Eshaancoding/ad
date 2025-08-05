@@ -264,7 +264,7 @@ def build_kernel (
         errcode
     )
 
-    cl.clReleaseProgram(program); # release program for memory benefits
+    check(cl.clReleaseProgram(program)); # release program for memory benefits
 
     assert errcode.contents.value == 0, "Error getting kernel"
 
@@ -291,12 +291,12 @@ def build_kernel (
             case _:
                 raise Exception(f"Invalid argument {arg} at idx: {idx}")
 
-        cl.clSetKernelArg(
+        check(cl.clSetKernelArg(
             kernel,
             idx,
             arg_size,
             obj
-        )
+        ))
 
     if global_size is not None and local_size is not None:
         assert len(global_size) == len(local_size), "dimensions of global size and local size must be equal"
