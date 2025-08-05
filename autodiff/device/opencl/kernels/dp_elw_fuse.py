@@ -62,7 +62,4 @@ __kernel void {name} (
     args.append(Int(dpnode.children_shapes[0][1]))
     args.append(Int(dpnode.children_shapes[1][1]))
 
-    print(args)
-    print(program_str)
-   
     return build_kernel(dev, name, program_str, args, (dpnode.shape[1], dpnode.shape[0]), None)
