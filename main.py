@@ -25,7 +25,7 @@ else:
         Sigmoid(),
     )
 
-inp = Tensor.randn((2, 64))
+inp = Tensor.randn((2, 512))
 opt = SGD(nn.parameters(), lr=0.01)
 def f():
     res = nn(inp)
