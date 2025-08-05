@@ -287,7 +287,7 @@ def build_kernel (
                 arg_size = size * 4 # again, assuming fp32
             case Int(_ as val):
                 obj = ctypes.pointer(cl.cl_int(val))
-                arg_size = ctypes.sizeof(obj)
+                arg_size = ctypes.sizeof(cl.cl_int())
             case _:
                 raise Exception(f"Invalid argument {arg} at idx: {idx}")
 
