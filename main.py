@@ -3,7 +3,7 @@ from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder, SGD
 from autodiff.nn.transformer import * 
 from autodiff.helper import benchmark
 
-if True:
+if False:
     """
     nn = MultiHeadAttention(
         d_model=512,
@@ -29,9 +29,9 @@ inp = Tensor.randn((2, 64))
 opt = SGD(nn.parameters(), lr=0.01)
 def f():
     res = nn(inp)
-    res.keep()
-    #res.backward() 
-    #opt.step()
+    #res.keep()
+    res.backward() 
+    opt.step()
 
 # In future release pass the idx
 benchmark(lambda: ir_for(range(0, 1000), f), name="Tracking nodes")
