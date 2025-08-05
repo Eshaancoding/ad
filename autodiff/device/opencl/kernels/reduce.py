@@ -1,10 +1,9 @@
 from ....graph import *
 from ....context import *
-from ..context import ADCLContext
 from ..karg import *
 from math import ceil
-import numpy as np
-import pyopencl as cl
+from ..device import OpenCLDevice
+from ..cl_helper import *
 
 def lower_reduce_op (op: ReduceOp, orig:str, new:str):
     match op:
@@ -13,12 +12,12 @@ def lower_reduce_op (op: ReduceOp, orig:str, new:str):
         case ReduceOp.MAX:
             return f"{orig} = max({orig}, {new});"
 
-def execute_reduce (context: ADCLContext, cmd: ReduceNode):
+def init_reduce (dev: OpenCLDevice, cmd: ReduceNode):
     name = f"reduce_{cmd.program_id}"
     args, program_args = lower_args(cmd)
     
     # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args},
     __local float* scratch,
@@ -48,7 +47,7 @@ __kernel void {name} (
         {lower_karg(cmd.kres)} = scratch[0];
     }}
 }}           
-    """.strip())
+    """.strip()
     
     # get sizes
     sh = cmd.children_shapes[0]
@@ -57,13 +56,11 @@ __kernel void {name} (
     local_size = ceil(reduce_size / 2) * 2
    
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
-    args.append(cl.LocalMemory(local_size * np.dtype(np.float32).itemsize))
-    args.append(np.int32(reduce_size))
-  
-    program(
-        context.command_queue,        # Command queue
-        (local_size * vec_size, ),     # global size 
-        (local_size, ),               # local size
-        *args                         # arguments
-    )
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
+    args.append(LocalMem(local_size))
+    args.append(Int(reduce_size))
+
+    global_size = (int(local_size * vec_size), )
+    local_size = (int(local_size), )
+    
+    return build_kernel(dev, name, program_str, args, global_size, local_size)

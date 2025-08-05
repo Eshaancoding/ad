@@ -1,8 +1,9 @@
 from ....graph import *
 from ....context import *
-from ..context import ADCLContext
 from ..karg import *
 from math import prod
+from ..cl_helper import *
+from ..device import OpenCLDevice
 
 def lower_unary (cmd: UnaryNode):
     expr = ""
@@ -31,26 +32,21 @@ def lower_unary (cmd: UnaryNode):
 
     return f"{lower_karg(cmd.kres)} = {expr};"
 
-def execute_unary (context: ADCLContext, cmd: UnaryNode):
+def init_unary (dev: OpenCLDevice, cmd: UnaryNode):
     name = f"unary_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args}
 ) {{
     const size_t _global_id = get_global_id(0);
     {lower_unary(cmd)} 
 }}           
-    """.strip())
+    """.strip()
     
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
-   
-    program(
-        context.command_queue,   # Command queue
-        (prod(cmd.shape), ),     # global size 
-        None,                    # local size
-        *args                    # arguments
-    )
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
+
+    return build_kernel(dev, name, program_str, args, (prod(cmd.shape), ), None)

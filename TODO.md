@@ -1,5 +1,46 @@
 # TODO
 
+```py
+buf_one = init_buffer(self.context, 4, np.array([1,2,3,4], dtype=np.float32))
+buf_two = init_buffer(self.context, 4, np.array([1,2,3,4], dtype=np.float32))
+buf_three = init_buffer(self.context, 4, None)
+
+kernel, f = build_kernel(self.queue, self.context, self.device, "test", """
+__kernel void test (
+    __global float* a,
+    __global float* b,
+    __global float* c,
+    __local float* v,
+    int val
+) {{
+    const size_t _global_id = get_global_id(0);
+    c[_global_id] = a[_global_id] + val * b[_global_id];
+}}
+""", [
+    Buffer(buf_one),
+    Buffer(buf_two),
+    Buffer(buf_three),
+    LocalMem(4),
+    Int(3)
+], (4,), (4,))
+
+f()
+
+print("waiting all")
+waitAll(self.queue)
+
+a = read_buffer(self.queue, buf_three, 4)
+print("free buffer..")
+free_buffer(buf_one)
+free_buffer(buf_two)
+free_buffer(buf_three)
+
+free_kernel(kernel)
+
+print(a)
+print("done")
+```
+
 ## Main Todo
 
 * Autogen OpenCL

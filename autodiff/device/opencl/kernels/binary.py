@@ -1,8 +1,9 @@
 from ....graph import *
 from ....context import *
-from ..context import ADCLContext
 from ..karg import *
 from math import prod
+from ..cl_helper import *
+from ..device import OpenCLDevice
 
 def lower_binary (cmd: BinaryNode):
     op_str = ""
@@ -14,21 +15,19 @@ def lower_binary (cmd: BinaryNode):
 
     return f"{lower_karg(cmd.kres)} = {lower_karg(cmd.kargs[0])} {op_str} {lower_karg(cmd.kargs[1])};"
 
-def prepare_binary (cmd: BinaryNode) -> Callable:
+def init_binary (dev:OpenCLDevice, cmd: BinaryNode) -> Callable:
     name = f"binary_{cmd.program_id}"
     args, program_args = lower_args(cmd)
-
-    # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args}
 ) {{
     const size_t _global_id = get_global_id(0);
     {lower_binary(cmd)} 
 }}           
-    """.strip())
+    """.strip()
     
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
    
-    program(context.command_queue, (prod(cmd.shape), ), None, *args) 
+    return build_kernel(dev, name, program_str, args, (prod(cmd.shape), ), None)

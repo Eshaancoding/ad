@@ -2,7 +2,7 @@ from .. import Device
 from ...context import Proc
 from ...alloc import AllocEntry, DeallocEntry
 from ...graph import *
-#from .kernels import *
+from ...fusion import *
 from .cl_helper import *
 from typing import Callable
 
@@ -42,14 +42,35 @@ class OpenCLDevice (Device):
         self.buffers = {}
 
     def init (self, cmd):
+        from .kernels import init_dotprod, init_unary, init_binary, init_reduce, init_contigious, init_elwfuse, init_dp_elw_fuse, init_reduce_elw_fuse
         match cmd:
             case AllocEntry():
                 if not cmd.is_temp:
                     self.buffers[cmd.id] = init_buffer(self.context, cmd.size, cmd.content)
-            case DeallocEntry():
-                pass
-            case ForNode(): # handled by upper level
-                pass
+                return
+            case DotProdNode(): kern, func = init_dotprod(self, cmd)
+            case UnaryNode(): kern, func = init_unary(self, cmd)
+            case BinaryNode(): kern, func = init_binary(self, cmd)
+            case ReduceNode(): kern, func = init_reduce(self, cmd)
+            case ContigiousNode(): kern, func = init_contigious(self, cmd)
+            case ElwFuse(): kern, func = init_elwfuse(self, cmd)
+            case DPElwFuse(): kern, func = init_dp_elw_fuse(self, cmd)
+            case ReduceElwFuse(): kern, func = init_reduce_elw_fuse(self, cmd)
+            case DeallocEntry(): return
+            case ForNode(): return # handled by upper level
+
+        self.kernels[cmd.program_id] = kern
+        self.funcs[cmd.program_id] = func
+
+    def run (self, cmd):
+        match cmd:
+            case AllocEntry(): pass
+            case DeallocEntry(): pass
+            case ForNode(): pass
+            case _:
+                if not hasattr(cmd, "program_id"):
+                    raise Exception("Encountered invalid node with no program id")
+                self.funcs[cmd.program_id]() # enqueue to buffer
 
     def _run_proc (self, proc: Proc, func: Callable, init:bool=False):
         for cmd in proc.procedure:
@@ -65,53 +86,23 @@ class OpenCLDevice (Device):
         
     def execute (self, proc: Proc):
         self._run_proc(proc, self.init, init=True)
+        self._run_proc(proc, self.run, init=False)
         
-        buf_one = init_buffer(self.context, 4, np.array([1,2,3,4], dtype=np.float32))
-        buf_two = init_buffer(self.context, 4, np.array([1,2,3,4], dtype=np.float32))
-        buf_three = init_buffer(self.context, 4, None)
-
-        kernel, f = build_kernel(self, "test", """
-        __kernel void test (
-            __global float* a,
-            __global float* b,
-            __global float* c,
-            __local float* v,
-            int val
-        ) {{
-            const size_t _global_id = get_global_id(0);
-            c[_global_id] = a[_global_id] + val * b[_global_id];
-        }}
-        """, [
-            Buffer(buf_one),
-            Buffer(buf_two),
-            Buffer(buf_three),
-            LocalMem(4),
-            Int(3)
-        ], (4,), None)
-
-        f()
-
         waitAll(self.queue)
 
-        a = read_buffer(self.queue, buf_three, 4)
-        free_buffer(buf_one)
-        free_buffer(buf_two)
-        free_buffer(buf_three)
-
-        free_kernel(kernel)
-
-        print(a)
+        #a = read_buffer(self.queue, buf_three, 4)
 
 
     def __del__ (self):
         # free buffers
         for buf in self.buffers.values():
             free_buffer(buf)
-        print(f"Free {len(self.buffers)} buffers")
+        print(f"Freed {len(self.buffers)} buffers")
 
         # free kernels
         for kernel in self.kernels.values():
             free_kernel(kernel) 
+        print(f"Freed {len(self.kernels)} kernels")
 
         # Free everything else
         free_queue(self.queue)

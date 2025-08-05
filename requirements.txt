@@ -1,4 +1,3 @@
 colored
 toposort
 numpy
-pyopencl

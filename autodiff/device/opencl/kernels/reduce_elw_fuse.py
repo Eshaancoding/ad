@@ -1,10 +1,9 @@
 from ....graph import *
 from ....context import *
-from ..context import ADCLContext
 from ..karg import *
+from ..cl_helper import *
+from ..device import OpenCLDevice
 from math import ceil
-import numpy as np
-import pyopencl as cl
 
 from .reduce import lower_reduce_op
 from .binary import lower_binary
@@ -25,13 +24,13 @@ def lower_reduce_elw_fuse (fused_cmd: ReduceElwFuse):
         res += "\n    "
     return res        
 
-def execute_reduce_elw_fuse (context: ADCLContext, cmd: ReduceElwFuse):
+def init_reduce_elw_fuse (dev: OpenCLDevice, cmd: ReduceElwFuse):
     name = f"reduce_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
     reduce_node = cmd.get_reduce()
     
     # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args},
     __local float* scratch,
@@ -62,7 +61,7 @@ __kernel void {name} (
         {lower_reduce_elw_fuse(cmd)}
     }}
 }}           
-    """.strip())
+    """.strip()
     
     # get sizes
     sh = reduce_node.children_shapes[0]
@@ -71,13 +70,11 @@ __kernel void {name} (
     local_size = ceil(reduce_size / 2) * 2
    
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
-    args.append(cl.LocalMemory(local_size * np.dtype(np.float32).itemsize))
-    args.append(np.int32(reduce_size))
-  
-    program(
-        context.command_queue,        # Command queue
-        (int(local_size * vec_size), ),     # global size 
-        (int(local_size), ),               # local size
-        *args                         # arguments
-    )
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
+    args.append(LocalMem(local_size))
+    args.append(Int(reduce_size))
+
+    global_size = (int(local_size * vec_size), )
+    local_size = (int(local_size), )
+
+    return build_kernel(dev, name, program_str, args, global_size, local_size) 

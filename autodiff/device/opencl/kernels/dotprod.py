@@ -1,15 +1,15 @@
 from ....graph import *
 from ....context import *
-from ..context import ADCLContext
 from ..karg import *
-import numpy as np
+from ..device import OpenCLDevice
+from ..cl_helper import *
 
-def execute_dotprod (context: ADCLContext, cmd: DotProdNode):
+def init_dotprod (dev: OpenCLDevice, cmd: DotProdNode):
     name = f"dotprod_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args},
     int _wA
@@ -34,15 +34,10 @@ __kernel void {name} (
     int _y = _tx;
     {lower_karg(cmd.kres)} = _value;   
 }}           
-    """.strip())
+    """.strip()
     
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
-    args.append(np.int32(cmd.children_shapes[0][1])) # _wA = input size
-   
-    program(
-        context.command_queue,   # Command queue
-        (cmd.shape[1], cmd.shape[0]),     # global size 
-        None,                    # local size
-        *args                    # arguments
-    )
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
+    args.append(Int(cmd.children_shapes[0][1]))
+
+    return build_kernel(dev, name, program_str, args, (cmd.shape[1], cmd.shape[0]), None)

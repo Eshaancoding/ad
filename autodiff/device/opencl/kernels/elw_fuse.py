@@ -2,8 +2,9 @@ from ....graph import *
 from ....context import *
 from ....fusion import *
 from ....alloc import *
-from ..context import ADCLContext
 from ..karg import *
+from ..device import OpenCLDevice
+from ..cl_helper import *
 from math import prod
 
 from .binary import lower_binary
@@ -18,24 +19,26 @@ def lower_elwfuse (fused_cmd: ElwFuse):
             case UnaryNode():
                 res += lower_unary(cmd)
             case AllocEntry():
+                assert cmd.is_temp, "not temp alloc entry in elwfuse..."
                 res += lower_temp_alloc(cmd)
         res += "\n    "
     return res        
          
-def execute_elwfuse (context: ADCLContext, cmd: ElwFuse):
+def init_elwfuse (dev: OpenCLDevice, cmd: ElwFuse):
     name = f"elwfuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args}
 ) {{
     const size_t _global_id = get_global_id(0);
     {lower_elwfuse(cmd)} 
 }}           
-    """.strip())
+    """.strip()
     
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
-    program(context.command_queue, (prod(cmd.get_elw().shape), ), None, *args)
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
+
+    return build_kernel(dev, name, program_str, args, (prod(cmd.get_elw().shape), ), None)

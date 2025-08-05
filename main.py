@@ -34,5 +34,5 @@ def f():
     opt.step()
 
 # In future release pass the idx
-benchmark(lambda: ir_for(range(0, 300), f), name="Tracking nodes")
+benchmark(lambda: ir_for(range(0, 1000), f), name="Tracking nodes")
 benchmark(lambda: execute(), name="Execution")

@@ -1,7 +1,8 @@
 from ....graph import *
 from ....context import *
-from ..context import ADCLContext
 from ..karg import *
+from ..device import OpenCLDevice
+from ..cl_helper import *
 import numpy as np
 
 from .binary import lower_binary
@@ -22,13 +23,13 @@ def lower_dp_elw_fuse (fused_cmd: DPElwFuse):
         res += "\n    "
     return res        
 
-def execute_dp_elw_fuse (context: ADCLContext, cmd: DPElwFuse):
+def init_dp_elw_fuse (dev: OpenCLDevice, cmd: DPElwFuse):
     dpnode = cmd.get_dp()
     name = f"dp_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 
     # construct program
-    program = context.get_program(name, f"""
+    program_str = f"""
 __kernel void {name} (
     {program_args},
     int _wA,
@@ -54,16 +55,11 @@ __kernel void {name} (
     int _global_id = _ty * _wB + _tx;
     {lower_dp_elw_fuse(cmd)}
 }}           
-    """.strip())
+    """.strip()
     
     # buffer args
-    args = [context.get_buffer(buf_id) for buf_id in args]
-    args.append(np.int32(dpnode.children_shapes[0][1])) # _wA = input size
-    args.append(np.int32(dpnode.children_shapes[1][1])) # _wB = output size
+    args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
+    args.append(Int(dpnode.children_shapes[0][1]))
+    args.append(Int(dpnode.children_shapes[1][1]))
    
-    program(
-        context.command_queue,                  # Command queue
-        (dpnode.shape[1], dpnode.shape[0]),     # global size 
-        None,                                   # local size
-        *args                                   # arguments
-    )
+    return build_kernel(dev, name, program_str, args, (dpnode.shape[1], dpnode.shape[0]), None)
