@@ -1,4 +1,3 @@
-from .context import Context
 from .node import Node
 from toposort import toposort
 from typing import Dict, List
@@ -60,9 +59,12 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
     for n_id in g_dep:
         g_dep[n_id] = list(filter(lambda item: item not in already_decl, g_dep[n_id]))
     g_dep = {key:val for key, val in g_dep.items() if len(val) > 0}
+
     
     # toposort
     toposort_res = list(toposort(g_dep))
+
+    #print_toposort(toposort_res, id_to_node)
 
     # Fuse!
     # TODO: watch for fusion node 80, 138
@@ -70,7 +72,6 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
         DPElwFuse,
         ReduceElwFuse,
         ElwFuse,
-        Procedure # fusing procedure takes a while...
     ]
     
     def fn_fuse (toposort_res, id_to_node, op, fuse_type):
@@ -79,6 +80,9 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
         itr = 0
         while ch > 0:
             if fuse_type == FuseType.ACROSS_LAYER:
+                #import os
+                #os.system("clear")
+                #print_toposort(toposort_res, id_to_node)
                 toposort_res, ch = fuse_across(id_to_node, toposort_res, op)
             elif fuse_type == FuseType.WITHIN_LAYER:
                 toposort_res, ch = fuse_within(id_to_node, toposort_res, op)
@@ -86,9 +90,9 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             if itr >= 1000: # iter stop
                 print("FUSE OPERATION ITERATION PEAKED!!!") # alert the user; this shouldn't happen in most scenario
                 break
-
+ 
         return toposort_res
-            
+
     for op in fusion_ops:            
         if op().type == FuseType.ALL:
             st = time()
@@ -98,19 +102,5 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             print(f"Fuse {op.__name__} took: ", end - st)
         else:
             toposort_res = benchmark(lambda: fn_fuse(toposort_res, id_to_node, op, op().type), name=f"Fuse Op: {op.__name__}")
-
-    try:
-        assert len(toposort_res) == 1, "Didn't fully capture procedure."
-        assert len(toposort_res[0]) == 1, "Didn't fully capture procedure. "
-        node = id_to_node[list(toposort_res[0])[0]]
-        assert isinstance(node, FuseBase), "First node is not a FuseBase object"
-    except Exception as e:
-        # print the proc as of now
-        for layer in toposort_res:
-            print("\n================ Layer ================")
-            for node in layer:
-                print(id_to_node[node]) 
     
-        raise e
-    
-    return Proc(node.nodes)
+    return Proc(flatten_toposort(toposort_res, id_to_node, already_decl))

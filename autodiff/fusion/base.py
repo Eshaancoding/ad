@@ -25,7 +25,7 @@ class FuseBase ():
         self.type = ty
         self.nodes: List[Node | AllocEntry] = []
         self.is_proc = is_proc
-        self.fuse_id = context.get_fuse_id()
+        self.fuse_id = context.get_id()
 
     def _add_node(self, add):
         """

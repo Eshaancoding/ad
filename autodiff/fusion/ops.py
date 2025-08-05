@@ -65,11 +65,3 @@ class ReduceElwFuse (FuseBase):
             if isinstance(n, ReduceNode):
                 return n
         raise Exception("ReduceNode not found")
-    
-class Procedure (FuseBase):
-    def __init__ (self):
-        super().__init__(FuseType.ALL, is_proc=True)
-        
-    @staticmethod
-    def could_fuse (_, _f):
-        return True

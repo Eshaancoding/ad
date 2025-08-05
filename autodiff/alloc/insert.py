@@ -52,7 +52,7 @@ def insert_alloc (main_proc: Proc) -> Dict[int, FuseBase]:
                 for fuse_idx, n in enumerate(p.nodes):
                     fused_ids_to_f[p.fuse_id] = p
                     if isinstance(n, Tensor):
-                        p.nodes[fuse_idx] = AllocEntry(n.id, prod(n.shape), n.data)
+                        p.nodes[fuse_idx] = AllocEntry(n.id, prod(n.shape), n.arr)
                         id_to_size[n.id] = prod(n.shape)
                         continue
 
@@ -62,7 +62,7 @@ def insert_alloc (main_proc: Proc) -> Dict[int, FuseBase]:
                     )
             elif isinstance(p, Node):
                 if isinstance(p, Tensor):
-                    proc.procedure[idx] = AllocEntry(p.id, prod(p.shape), p.data)
+                    proc.procedure[idx] = AllocEntry(p.id, prod(p.shape), p.arr)
                     id_to_size[p.id] = prod(p.shape)
                     continue
                 

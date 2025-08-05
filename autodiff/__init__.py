@@ -1,12 +1,12 @@
 from autodiff.fusion.base import FuseBase
-from autodiff.opt import dep_opt, mem_opt, repeat_opt
+from autodiff.opt import dep_opt, repeat_opt
 from autodiff.opt.simplify import simpl_node
 from .context import context
 from math import prod
 from typing import Callable
 from .graph import Tensor, ConcatNode, Node
 from typing import List
-from .helper import benchmark, walk_graph
+from .helper import benchmark
 
 ##########################################
 ## Autodiff operations
@@ -28,14 +28,14 @@ def dot (left: Node, right: Node) -> Node:
     from .graph import DotProdNode
     return DotProdNode(left, right)
 
+num_programs = 0
 def execute ():
+    global num_programs
     # from .core.kernelize import kernalize
     from .kernalize.kernalize import kernalize
     from .linearize import linearize
     from .alloc import alloc
-    from .device.opencl import OpenCLDevice, cl
-
-    from pprint import pprint
+    from .device.opencl import OpenCLDevice, CLDevice
 
     # lock procedure
     context.lock_proc = True
@@ -46,7 +46,7 @@ def execute ():
 
     # apply graph-level optimizations (ex: constant simplification)
     benchmark(lambda: simpl_node(context), "simplify node")
-
+    
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
     # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented
@@ -56,7 +56,7 @@ def execute ():
     proc = benchmark(lambda: linearize(context.main_proc()), "linearize")
 
     # perform memory optimization
-    proc = benchmark(lambda: mem_opt(proc), "mem opt")
+    #proc = benchmark(lambda: mem_opt(proc), "mem opt")
 
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
@@ -66,15 +66,17 @@ def execute ():
 
     # assign program id for each node that is about to be executed
     def assign_program_id (n: Node, _):
+        global num_programs
         if isinstance(n, Node) or isinstance(n, FuseBase):
             n.program_id = context.get_prog_id()
+            num_programs += 1
         return n
     proc.walk(assign_program_id, step_fused=False, step_proc=True)
 
-    pprint(proc)
-    
+    print(f"Num programs: {num_programs}")
+
     # Send procedure to device to be executed
-    OpenCLDevice(cl.device_type.ALL).execute(proc)
+    OpenCLDevice(CLDevice.GPU).execute(proc)
 
 ##########################################
 ## Control flow 
@@ -90,7 +92,7 @@ def ir_for (r: range, f: Callable):
 
 ##########################################
 ## Misc
-def print_graph ():
+def pg ():
     """
     Note that print graph will show concat node, even though it's folded at kernalize.
     """

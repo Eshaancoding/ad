@@ -1,7 +1,7 @@
 from ..graph import Node
 from ..context import Context
 from . import FuseBase
-from .helper import clean_toposort_res, resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
+from .helper import clean_toposort_res, print_toposort, resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
 from typing import Tuple, Dict
 from pprint import pprint
 
@@ -37,24 +37,24 @@ def fuse_across (id_to_node, toposort_res, fuse_op: FuseBase) -> Tuple[Dict, int
         # ---- replace matches ---- 
         for id_one in matches:
             id_two = matches[id_one]
+            
             node_one = id_to_node[id_one]
             node_two = id_to_node[id_two]
             
             # create new node
-            new_id = context.get_id()
             new_node = fuse_op()
             new_node.add(node_one)
             new_node.add(node_two)
             
             # update id_to_node
-            id_to_node[new_id] = new_node
+            id_to_node[new_node.fuse_id] = new_node
             del id_to_node[id_one]
             del id_to_node[id_two]
             
             # update toposort res
             toposort_res[i] = set(filter(lambda x: x != id_one, toposort_res[i]))
             toposort_res[i+1] = set(filter(lambda x: x != id_two, toposort_res[i+1]))
-            toposort_res[i].add(new_id)
+            toposort_res[i].add(new_node.fuse_id)
     
         ch += len(matches)
         

@@ -19,7 +19,7 @@ class BroadcastNode (Node):
         if not isinstance (grad, Node):
             raise TypeError("Grad is not node!")
 
-        self.child.bck(grad.sum(self.dim))
+        self.child.bck(grad.sum(self.dim).unsqueeze(self.dim)) # need to unsqueeze as keep dim
         
     def __repr__ (self) -> str:
         return f"{self.id} = Broadcast dim {self.dim} to size {self.size} --> {self.child.id}"

@@ -3,6 +3,7 @@ from ..graph import *
 from colored import stylize, fore, style
 from ..helper import benchmark
 from autodiff.context import context
+import numpy as np
 
 @dataclass 
 class LocationBase:
@@ -31,7 +32,7 @@ class AllocCmds:
     pass
 
 class AllocEntry (AllocCmds):
-    def __init__(self, alloc_id: int, size: int, content: any = None):
+    def __init__(self, alloc_id: int, size: int, content: np.array = None):
         super().__init__()
         self.id = alloc_id
         self.size = size

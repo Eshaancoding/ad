@@ -40,11 +40,13 @@ def format_graph(n, level):
             res += formatted_str
     elif isinstance(n, list) and len(n) == 0:
         return "[]"
+    elif isinstance(n, Node):
+        return format_graph([n], level)
     else:
         raise TypeError(f"Invalid type {type(n)} in format graph")
     return res
 
-def print_graph(n):
+def pg (n):
     """
     Note that print graph will show concat node, even though it's folded
     at kernalize.

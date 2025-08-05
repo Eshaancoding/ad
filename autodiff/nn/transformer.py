@@ -26,9 +26,9 @@ class MultiHeadAttention (Module):
         assert d_model % num_heads == 0, "d_model must be divisible by num heads"
         d_v = d_model // num_heads
         
-        self.wq = [Linear(d_model, d_v) for _ in range(num_heads)]
-        self.wk = [Linear(d_model, d_v) for _ in range(num_heads)]
-        self.wv = [Linear(d_model, d_v) for _ in range(num_heads)]
+        self.wq = [Linear(d_model, d_v, bias=False) for _ in range(num_heads)]
+        self.wk = [Linear(d_model, d_v, bias=False) for _ in range(num_heads)]
+        self.wv = [Linear(d_model, d_v, bias=False) for _ in range(num_heads)]
         self.attentions = [Attention() for _ in range(num_heads)]
         self.wo = Linear(d_model, d_model)
         self.num_heads = num_heads
@@ -45,7 +45,7 @@ class MultiHeadAttention (Module):
             )
             for i in range(self.num_heads)
         ]
-        
+
         return self.wo(concat(head_out, -1))
     
 class AttentionFeedforward (Module):
@@ -72,7 +72,7 @@ class TransformerEncoderLayer (Module):
         y = self.layer_norm_att(x + y)     
         
         z = self.ffwd(y)
-        z = self.layer_norm_ffwd(y + z)
+        #z = self.layer_norm_ffwd(y + z)
         
         return z
     

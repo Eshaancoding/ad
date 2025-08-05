@@ -1,8 +1,10 @@
 from copy import deepcopy
 from typing import Callable, List, Dict, Union
+
 from .node import Node
 from .expr import *
 from .graph import *
+from .fusion import *
 from time import time
 
 # indent string
@@ -125,3 +127,5 @@ def benchmark (f: Callable, name: str):
     print(f"{name} took: {(end - start)*1000:.4f} ms")
     return r
     
+
+

@@ -1,7 +1,7 @@
 from typing import Callable, List, Optional
 from .node import Node
 from colored import Fore, Style
-from .print import print_graph as g_print
+from .print_graph import pg
 
 class Proc ():
     def __init__(self, proc: List[Node]):
@@ -11,12 +11,12 @@ class Proc ():
         self.id = context.get_proc_id()
         
     def __repr__ (self):
-        from .helper import indent
+        from .helper import indent_str
         s = ""
         for n in self.procedure:
             s += str(n) + "\n"
             if hasattr(n, "proc"):
-                s += indent(str(n.get_proc()), prefix=r'    ') + "\n"
+                s += indent_str(str(n.get_proc())) + "\n"
         return s
     
     def insert (self, idx, val):
@@ -71,7 +71,7 @@ class Block ():
         return st
     
     def print_graph (self):
-        g_print(self.nodes)
+        pg(self.nodes)
 
 # Shared context as graph is carried out. 
 # Includes procedure tracking, dependency list, and unique id generation
@@ -80,7 +80,6 @@ class Context ():
         self.dep_nodes = []
 
         self.id = -1
-        self.fuse_id = -1
         self.proc_id = -1
         self.program_id = -1
 
@@ -117,10 +116,6 @@ class Context ():
         self.id += 1
         return self.id
     
-    def get_fuse_id (self):
-        self.fuse_id += 1
-        return self.fuse_id
-
     def get_proc_id (self):
         self.proc_id += 1
         return self.proc_id 

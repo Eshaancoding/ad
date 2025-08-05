@@ -10,10 +10,9 @@ from typing import Dict
 is_new = False
 
 def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
-    global is_new
+    global is_new, simpl_nodes
     if node.id in visited:
         return node
-    visited[node.id] = 1
 
     match node:
         ############ Constant simplification ###############
@@ -52,6 +51,25 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
             elif op == BinaryOp.MULT:
                 return ConstantNode(0.0, sh)
 
+        ############ n * 1.0 = n ###############
+        case BinaryNode(
+            _ as n,
+            ConstantNode(1.0, sh),
+            BinaryOp.MULT,
+            _
+        ):
+            is_new = True
+            return n
+
+        case BinaryNode(
+            ConstantNode(1.0, sh),
+            _ as n,
+            BinaryOp.MULT,
+            _
+        ):
+            is_new = True
+            return n
+
         ################ Unary simplfication of constant ################
         case UnaryNode(
             ConstantNode(_ as c, _ as sh),
@@ -81,6 +99,7 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
                 case UnaryOp.LESS_OR_EQ_ZERO:
                     result_val = float(c <= 0.0)
 
+                    
             return ConstantNode(result_val, sh)
 
     # if on parent node, reset the visited and is_new for going through the child
@@ -106,6 +125,8 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
                 node.child = _inner_simpl(node.child, visited, on_child=True)
             else:
                 break
+
+    visited[node.id] = 1 
 
     return node
 

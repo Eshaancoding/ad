@@ -42,19 +42,18 @@ def fuse_within (id_to_node, toposort_res, fuse_op: FuseBase):
             node_two = id_to_node[id_two]
             
             # create new node
-            new_id = context.get_id()
             new_node = fuse_op()
             new_node.add(node_one)
             new_node.add(node_two)
             
             # update id_to_node
-            id_to_node[new_id] = new_node
+            id_to_node[new_node.fuse_id] = new_node
             del id_to_node[id_one]
             del id_to_node[id_two]
             
             # update toposort res
             toposort_res[i] = set(filter(lambda x: x != id_one and x != id_two, toposort_res[i]))
-            toposort_res[i].add(new_id)
+            toposort_res[i].add(new_node.fuse_id)
     
         ch += len(matches)
         

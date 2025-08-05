@@ -4,6 +4,7 @@ from typing import Dict
 from pprint import pprint
 from dataclasses import dataclass
 from ..expr import *
+import os
 
 @dataclass
 class VarEntry:
@@ -146,10 +147,10 @@ def tetris_opt (proc: Proc):
     temp_id = context.get_id()
 
     # debug
-    if False:
-        print("================== Alloc Debug ==================")
-        print(f"Using: {max_temp_size} out of {total_size}")
-        print(f"Saved {int(total_size - max_temp_size)}. Using {(max_temp_size/total_size)*100:.3f}%")
+    if total_size > 0:
+        print(f"ALLOC DEBUG: Using: {max_temp_size} out of {total_size}")
+        print(f"ALLOC DEBUG: Saved {int(total_size - max_temp_size)}. Using {(max_temp_size/total_size)*100:.3f}%")
+    if os.environ.get("PLOTMEM") == '1':
         plot(offsetted_entry[0])
 
     # then, replace the values needed
