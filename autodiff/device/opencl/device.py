@@ -70,8 +70,6 @@ class OpenCLDevice (Device):
             case DeallocEntry(): pass
             case ForNode(): pass
             case _:
-                if not hasattr(cmd, "program_id"):
-                    raise Exception("Encountered invalid node with no program id")
                 self.funcs[cmd.program_id]() # enqueue to buffer
 
     def _run_proc (self, proc: Proc, func: Callable, init:bool=False):

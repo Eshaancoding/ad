@@ -1,7 +1,6 @@
 from ..graph import Node
 from . import FuseBase
 from .helper import clean_toposort_res, resolve_one_to_many, resolve_many_to_one, resolve_circular_dep
-from pprint import pprint
 
 def fuse_within (id_to_node, toposort_res, fuse_op: FuseBase):
     from ..context import context

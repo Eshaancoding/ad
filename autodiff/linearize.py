@@ -1,10 +1,9 @@
 from .node import Node
 from toposort import toposort
 from typing import Dict, List
-from .helper import walk_graph, benchmark
+from .helper import walk_graph
 from .fusion import *
 from .graph import ConcatNode, ConstantNode
-from time import time
 from .context import Block, Proc
 
 def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
@@ -95,12 +94,9 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
 
     for op in fusion_ops:            
         if op().type == FuseType.ALL:
-            st = time()
             toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.WITHIN_LAYER) 
             toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.ACROSS_LAYER) 
-            end = time() 
-            print(f"Fuse {op.__name__} took: ", end - st)
         else:
-            toposort_res = benchmark(lambda: fn_fuse(toposort_res, id_to_node, op, op().type), name=f"Fuse Op: {op.__name__}")
+            toposort_res = fn_fuse(toposort_res, id_to_node, op, op().type)
     
     return Proc(flatten_toposort(toposort_res, id_to_node, already_decl))

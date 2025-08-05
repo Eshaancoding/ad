@@ -63,11 +63,9 @@ def alloc (proc: Proc):
     # first, insert all the allocations
     fused_ids_to_f = insert_alloc(proc) 
 
-    from pprint import pprint 
-
     # Just continue to apply for every proc recursively
     benchmark(lambda: temp_alloc(proc, fused_ids_to_f), "temp alloc")
-    benchmark(lambda: tetris_opt(proc), "tetris opt")
+    benchmark(lambda: tetris_opt(proc), "mem opt")
     benchmark(lambda: temp_clean(proc), "temp clean")
 
 

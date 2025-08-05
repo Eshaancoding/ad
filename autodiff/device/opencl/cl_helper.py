@@ -17,9 +17,10 @@ class CLDevice (Enum):
     CPU=1
     ALL=2
 
+cl_errors = {attr: k for k in dir(cl) if k.startswith("CL_") and isinstance(attr:=getattr(cl, k), int) and attr <= 0}
 def check (status:int):
     if status != 0:
-        raise RuntimeError("OpenCL Status != 0")
+        raise RuntimeError(f"OpenCL Status != 0. Error {status}: {cl_errors.get(status, "Unknown error")}")
 
 def to_size_t_arr (arr):
     SizeTArray = ctypes.c_size_t * len(arr)
@@ -296,6 +297,11 @@ def build_kernel (
             arg_size,
             obj
         )
+
+    if global_size is not None and local_size is not None:
+        assert len(global_size) == len(local_size), "dimensions of global size and local size must be equal"
+
+    assert len(global_size) > 0, "Must specify a global size"
 
     # Enqueue kernel (as a function)
     return kernel, lambda: check(cl.clEnqueueNDRangeKernel(

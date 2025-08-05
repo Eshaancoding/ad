@@ -29,9 +29,7 @@ def dot (left: Node, right: Node) -> Node:
     from .graph import DotProdNode
     return DotProdNode(left, right)
 
-num_programs = 0
 def execute ():
-    global num_programs
     # from .core.kernelize import kernalize
     from .kernalize.kernalize import kernalize
     from .linearize import linearize
@@ -67,14 +65,10 @@ def execute ():
 
     # assign program id for each node that is about to be executed
     def assign_program_id (n: Node, _):
-        global num_programs
         if isinstance(n, Node) or isinstance(n, FuseBase):
             n.program_id = context.get_prog_id()
-            num_programs += 1
         return n
     proc.walk(assign_program_id, step_fused=False, step_proc=True)
-
-    print(f"Num programs: {num_programs}")
 
     # Send procedure to device to be executed
     print("executing...")
