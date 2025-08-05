@@ -291,12 +291,19 @@ def build_kernel (
             case _:
                 raise Exception(f"Invalid argument {arg} at idx: {idx}")
 
-        check(cl.clSetKernelArg(
-            kernel,
-            idx,
-            arg_size,
-            obj
-        ))
+        try:
+            check(cl.clSetKernelArg(
+                kernel,
+                idx,
+                arg_size,
+                obj
+            ))
+        except Exception as e:
+            print("****** INVALID ARG *****")
+            print(f"Idx: {idx}, arg: {arg}")
+            print(f"Object: {obj}")
+            print(f"Arg size: {arg_size}")
+            raise e
 
     if global_size is not None and local_size is not None:
         assert len(global_size) == len(local_size), "dimensions of global size and local size must be equal"

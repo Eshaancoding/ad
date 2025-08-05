@@ -77,7 +77,7 @@ class OpenCLDevice (Device):
                 try:
                     self.funcs[cmd.program_id]() # enqueue to buffer
                 except Exception as e:
-                    print("**** ENCOUNTERED ERROR ****") 
+                    print("**** ENCOUNTERED ERROR ****")  # ideally, remove this
                     print(self.node_debug[cmd.program_id])
                     raise e
 
