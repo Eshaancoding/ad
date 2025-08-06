@@ -5,6 +5,7 @@ from pprint import pprint
 from dataclasses import dataclass
 from ..expr import *
 import os
+from autodiff.context import context
 
 @dataclass
 class VarEntry:
@@ -68,13 +69,15 @@ def tetris_opt (proc: Proc):
 
     var_tracker: Dict[int, Dict[int, VarEntry]] = {}
 
+    deps_ids = context.deps
+
     def walk_proc (node: Node|AllocCmds, proc_id: str):
         global idx
         if proc_id not in var_tracker:
             var_tracker[proc_id] = {}
 
         if isinstance(node, AllocEntry):
-            if not node.is_temp:
+            if not node.is_temp and node.id not in deps_ids:
                 var_tracker[proc_id][node.id] = VarEntry(node.id, idx, None, node.size)
         elif isinstance(node, DeallocEntry):
             if node.id in var_tracker[proc_id] and not node.is_temp:

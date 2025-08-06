@@ -1,3 +1,4 @@
+from autodiff import device
 from autodiff.fusion.base import FuseBase
 from autodiff.opt import dep_opt, repeat_opt
 from autodiff.opt.simplify import simpl_node
@@ -40,11 +41,13 @@ def execute ():
     context.lock_proc = True
 
     # perform optimizations 
+    # 1. make sure dep node gets replaced if there's any changes to the node
+
     benchmark(lambda: dep_opt(context), "dep_opt")    # delete nodes that are not needed or computed
+    benchmark(lambda: simpl_node(context), "simplify node")
     benchmark(lambda: repeat_opt(context), "repeat_opt") # re-use nodes already computed
 
     # apply graph-level optimizations (ex: constant simplification)
-    benchmark(lambda: simpl_node(context), "simplify node")
     
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
@@ -61,6 +64,7 @@ def execute ():
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
     # see if you can make fusion better here as well (test)
     # Apply allocations + opts on allocs
+
     alloc(proc)
 
     # assign program id for each node that is about to be executed
@@ -86,7 +90,6 @@ def ir_for (r: range, f: Callable):
     
     # Initialize for loop. This will automatically be added within the context
     ForNode(proc, r) 
-
 
 ##########################################
 ## Misc

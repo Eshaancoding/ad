@@ -77,7 +77,7 @@ class Block ():
 # Includes procedure tracking, dependency list, and unique id generation
 class Context ():
     def __init__ (self):
-        self.dep_nodes = []
+        self.dep_nodes: List[Node] = []
 
         self.id = -1
         self.proc_id = -1
@@ -90,8 +90,9 @@ class Context ():
         self.deps = []         # add dependency list 
         self.lenient_dep = False 
 
-    def add_dep_list (self, id:str):
-        self.deps.append(id)
+    def add_dep_list (self, node:Node):
+        self.deps.append(node.id)
+        self.dep_nodes.append(node)
         
     def add_to_dep (self, node:Node):
         if not self.lock_proc:

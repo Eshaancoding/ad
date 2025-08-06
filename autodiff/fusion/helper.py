@@ -107,8 +107,7 @@ def resolve_many_to_one (matches, id_to_node, debug=False):
         # if we are keeping more than one value, then keep nothing (invalid fuse 
         if len(keep) > 1:
             keep = []
-            if debug:
-                print(f"******* INVALID FUSE! MANY TO ONE ******")
+            print(f"******* INVALID FUSE! MANY TO ONE ******")
                 
         for id_one in dupl[id_two]:
             if id_one not in keep:

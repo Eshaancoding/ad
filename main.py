@@ -22,11 +22,12 @@ else:
         Linear(512, 256),
         Sigmoid(),
         Linear(256, 128),
-        Sigmoid(),
+        Sigmoid()
     )
 
 inp = Tensor.randn((2, 512))
 opt = SGD(nn.parameters(), lr=0.01)
+res = None
 def f():
     res = nn(inp)
     #res.keep()
@@ -34,5 +35,7 @@ def f():
     opt.step()
 
 # In future release pass the idx
-benchmark(lambda: ir_for(range(0, 100_000), f), name="Tracking nodes")
+benchmark(lambda: ir_for(range(0, 100), f), name="Tracking nodes")
 benchmark(lambda: execute(), name="full exec")
+
+print(nn.parameters()[0].val)

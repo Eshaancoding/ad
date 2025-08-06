@@ -72,7 +72,7 @@ class Node:
         Adds the node into dep list
         """
         from .context import context
-        context.add_dep_list(self.id)
+        context.add_dep_list(self)
     
     # helper for binary ops
     def _to_node (self, node, dim: List[int]):
@@ -188,7 +188,6 @@ class Node:
 
     def __neg__ (self):
         return self.__mul__(-1.0)
-
     def __matmul__ (self, other):
         from .graph import DotProdNode
         return DotProdNode(self, self._to_node(other, None))

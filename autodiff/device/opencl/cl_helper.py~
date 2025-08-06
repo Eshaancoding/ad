@@ -179,23 +179,25 @@ def read_buffer (
     Reads buffer object using opencl. Note that this is a BLOCKING operation.
     """
 
-    out_array = np.empty(shape if shape is not None else (size,), dtype=np.float32)
-    out_ptr = out_array.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-    size = ctypes.c_size_t(out_array.nbytes)
-
     check(cl.clEnqueueReadBuffer(
-        command_queue,      # command queue pointer
-        buffer,             # buffer pointer
-        True,               # blocking_read = CL_TRUE
-        0,                  # offset
-        size,               # size
-        out_ptr,            # pointer to host memory
-        0,                  # num_events_in_wait_list
-        None,               # event_wait_list
-        None                # event
+        command_queue,
+        buffer,
+        True, # This is a blocking operation
+        0,
+        size * 4, # again, assumes fp32. Needs to be changed for different fp types
+        pointer := ctypes.pointer(ctypes.c_float()),
+        0,
+        None,
+        event := cl.cl_event()
     ))
 
-    return out_array
+    # ensure that we wait for the event (ensures blocking even further)
+    # Although, this is not necessarily needed
+    check(cl.clWaitForEvents(1, ctypes.pointer(event)))
+
+    # convert pointer to np.array
+    arr = np.ctypeslib.as_array(pointer, shape=(size,) if shape is None else shape)
+    return arr
 
 ############################ Kernels ############################# 
 """

@@ -17,7 +17,7 @@ class Tensor (Node):
 
         # always add dep list of this
         from ..context import context  
-        context.add_dep_list(self.id) 
+        context.add_dep_list(self) 
         self.grad_tensor = None
 
     def bck (self, grad):
@@ -30,7 +30,7 @@ class Tensor (Node):
             # add to grad to dep list only if lenient_dep
             from ..context import context  
             if context.lenient_dep:
-                context.add_dep_list(self.grad_tensor.id)
+                context.add_to_dep(self.grad_tensor)
         else:
             self.grad_tensor += grad 
             
