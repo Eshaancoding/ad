@@ -34,7 +34,8 @@ class Node:
             context.remove_from_dep(ch)
         
         context.add_to_dep(self)
-        
+
+        self.val = None # for representing output after execution
 
         # set the self.left, self.right, or self.child at children
         if len(children) == 1:
@@ -188,6 +189,7 @@ class Node:
 
     def __neg__ (self):
         return self.__mul__(-1.0)
+
     def __matmul__ (self, other):
         from .graph import DotProdNode
         return DotProdNode(self, self._to_node(other, None))

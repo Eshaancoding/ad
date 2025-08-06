@@ -12,7 +12,7 @@ def format_node (n: Node, visited: Dict[int, int], level):
         if level == 0:
             return "", visited
 
-    s = str(n) + "\n"
+    s = str(n).split("-->")[0] + "\n"
     if (block := n.get_block()) is not None:
         s += indent(format_graph(block.nodes, level-1 if isinstance(level, int) else None)) + "\n"
     
@@ -28,7 +28,6 @@ def format_node (n: Node, visited: Dict[int, int], level):
         s += "\n"
 
     return s, visited
-
 
 def format_graph(n, level):
     res = ""

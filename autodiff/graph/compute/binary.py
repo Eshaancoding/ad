@@ -1,3 +1,5 @@
+from autodiff.context import context
+from autodiff.graph.tensor import Tensor
 from ...node import Node
 import math
 from enum import Enum
@@ -16,6 +18,9 @@ class BinaryNode (Node):
         super().__init__([left, right], left.shape, left.id if in_place else None)
         self.op = op
         self.in_place = in_place
+
+        if self.in_place and isinstance(left, Tensor): # if in place, add to dependency list
+            context.add_dep_list(left)
     
     def bck (self, grad:Node):
         if not isinstance(grad, Node):

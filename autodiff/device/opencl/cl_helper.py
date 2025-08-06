@@ -119,7 +119,7 @@ def initialize_context (device: cl.struct__cl_device_id):
         None, 
         status := ctypes.c_int32()
     )
-    assert status.value == 0, f"Can't initialize context. Ended with status: {status.value}"
+    check(status.value)
     return context
 
 def create_command_queue (device: cl.struct__cl_device_id, context: cl.struct__cl_context):
@@ -132,7 +132,7 @@ def create_command_queue (device: cl.struct__cl_device_id, context: cl.struct__c
         status := ctypes.c_int32()
     )
 
-    assert status.value == 0, f"Can't initialize command queue"
+    check(status.value)
     return queue
 
 def free_queue (queue: cl.struct__cl_command_queue):
@@ -163,7 +163,7 @@ def init_buffer (context: cl.struct__cl_context, size: int, content: Optional[np
         err_code := ctypes.pointer(cl.cl_int())
     )
 
-    assert err_code.contents.value == 0, "Error creating buffer"
+    check(err_code.contents.value)
     return buf
 
 def free_buffer (buffer: cl.struct__cl_mem):
@@ -240,7 +240,7 @@ def build_kernel (
         errcode := ctypes.pointer(cl.cl_int())
     )
 
-    assert errcode.contents.value == 0, "Error creating program from source"
+    check(errcode.contents.value)
   
     # Second, build program into kernel
     status = cl.clBuildProgram(
@@ -263,8 +263,7 @@ def build_kernel (
     )
 
     check(cl.clReleaseProgram(program)); # release program for memory benefits
-
-    assert errcode.contents.value == 0, "Error getting kernel"
+    check(errcode.contents.value)
 
     # Nice status message for error-handling build program (copied from tinygrad)
     if status != 0:

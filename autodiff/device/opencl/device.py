@@ -92,18 +92,12 @@ class OpenCLDevice (Device):
 
         #a = read_buffer(self.queue, buf_three, 4)
         # read buffers accordant to their dep list
-        read = 0
-        for dep in context.dep_nodes:
-            id = dep.id
-            if id in self.buffers:
-                dep.val = read_buffer(
-                    self.queue, 
-                    self.buffers[id], 
-                    self.buffers_size[id], 
-                    dep.shape
-                )
-                read += 1
-        print(f"Read {read} buffers")
+        context.read(lambda id, shape: read_buffer(
+            self.queue, 
+            self.buffers[id], 
+            self.buffers_size[id], 
+            shape
+        ))
 
     def __del__ (self):
         # free buffers

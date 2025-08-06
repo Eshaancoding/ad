@@ -2,12 +2,20 @@
 
 ## Main Todo
 
-* Make sure dep node gets replaced if there's any changes to the node
+* ~~Make sure dep node gets replaced if there's any changes to the node~~
 
 * numerical test for neural networks in general 
     * do it for at least neural net
     * make sure it is consistent as well
     * Although, shows promise already
+
+* Then do device feeder
+    * see if you can train a LLM faster than normal
+    * async transfer?
+    * Something similar to tinyllm etc.
+
+* Add an assign node (dev --> node) + get node (node --> device)
+    * no dep list; this is just easier to deal with lowk
 
 * Better fusion?
     * Fusion is pretty weird, not going to lie. 
@@ -15,12 +23,10 @@
         * many to one / one to many resolve  
     * could be better improved...
 
-* Then do device feeder
-    * see if you can train a LLM faster than normal
-    * async transfer?
-    * Something similar to tinyllm etc.
+* Add CUDA support + advanced dotprod
+    * this is where you are going more into the backend kernel space
+    * look more into kernel experimentaton etc.
 
-====== Then test with more tests (use pytest) ====== 
 * add more control
 * control, if, etc. etc. etc.
 

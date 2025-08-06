@@ -3,6 +3,8 @@ from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder, SGD
 from autodiff.nn.transformer import * 
 from autodiff.helper import benchmark
 
+context.lenient_dep = True
+
 if False:
     """
     nn = MultiHeadAttention(
@@ -12,9 +14,9 @@ if False:
     """
 
     nn = TransformerEncoder(
-        num_layers=2, # past 1 layer and it breaks pretty much; be careful of 100% core CPU util
+        num_layers=1, # past 1 layer and it breaks pretty much; be careful of 100% core CPU util
         d_model=64,
-        num_heads=4,
+        num_heads=2,
         ff_dim=128
     )
 else:
@@ -27,15 +29,18 @@ else:
 
 inp = Tensor.randn((2, 512))
 opt = SGD(nn.parameters(), lr=0.01)
-res = None
 def f():
     res = nn(inp)
-    #res.keep()
+    res.keep()
     res.backward() 
     opt.step()
 
 # In future release pass the idx
-benchmark(lambda: ir_for(range(0, 100), f), name="Tracking nodes")
+benchmark(lambda: ir_for(range(0, 10), f), name="Tracking nodes")
 benchmark(lambda: execute(), name="full exec")
 
-print(nn.parameters()[0].val)
+# ********* EXEC TIME: 922.099 ms **********
+# with tetris opt
+
+
+# ********* EXEC TIME: 941.764 ms **********

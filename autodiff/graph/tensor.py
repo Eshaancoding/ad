@@ -17,6 +17,7 @@ class Tensor (Node):
 
         # always add dep list of this
         from ..context import context  
+
         context.add_dep_list(self) 
         self.grad_tensor = None
 

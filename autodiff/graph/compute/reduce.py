@@ -31,9 +31,9 @@ class ReduceNode (Node):
         size_str = stylize(f"(Vec/X: {x_dim}, Reduce/Y: {y_dim})", fore("yellow") + style("bold"))
         
         if self.kargs[0].is_none() or self.kres.is_none():
-            return f"{self.id} = {self.op} on dim: -1 {size_str} ({self.child.id})"
+            return f"{self.id} = {self.op} on dim: -1 {size_str} --> ({self.child.id})"
         else:
-            return f"{self.kres} = {self.op} on dim: -1 {size_str} ({self.kargs[0]})"
+            return f"{self.kres} = {self.op} on dim: -1 {size_str} --> ({self.kargs[0]})"
 
     def node_eq(self, other) -> bool:
         if not isinstance(other, ReduceNode):

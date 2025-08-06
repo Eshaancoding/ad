@@ -69,7 +69,7 @@ def tetris_opt (proc: Proc):
 
     var_tracker: Dict[int, Dict[int, VarEntry]] = {}
 
-    deps_ids = context.deps
+    deps_ids = context.deps + list(context.dep_replace.values())
 
     def walk_proc (node: Node|AllocCmds, proc_id: str):
         global idx
@@ -184,5 +184,6 @@ def tetris_opt (proc: Proc):
     
     proc.walk(replace_to_temp)
 
-    proc.insert(0, AllocEntry(temp_id, max_temp_size, content=None))
-    proc.append(DeallocEntry(temp_id, max_temp_size))
+    if max_temp_size > 0:
+        proc.insert(0, AllocEntry(temp_id, max_temp_size, content=None))
+        proc.append(DeallocEntry(temp_id, max_temp_size))

@@ -1,4 +1,4 @@
-from autodiff.context import Context
+from autodiff.context import Context, context
 from autodiff.graph.compute.binary import BinaryNode, BinaryOp
 from autodiff.graph.compute.unary import UnaryNode, UnaryOp
 from autodiff.graph.data.constant import ConstantNode
@@ -24,30 +24,36 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
         ):
             assert sh1 == sh2, "shape not equal at simplify constant"
             is_new = True
-            return ConstantNode(c1 + c2 if op == BinaryOp.ADD else c1 * c2, shape=sh1)
+            ret = ConstantNode(c1 + c2 if op == BinaryOp.ADD else c1 * c2, shape=sh1)
+            context.add_dep_replace(node.id, ret.id) 
+            return ret
 
         ############ n + 0.0 = n ###############
         case BinaryNode(
-            _ as node,
+            _ as n,
             ConstantNode(0.0, sh),
             _ as op,
             _
         ):
             is_new = True
             if op == BinaryOp.ADD:
-                return node
+                context.add_dep_replace(node.id, n.id)
+                return n
             elif op == BinaryOp.MULT:
-                return ConstantNode(0.0, sh)
+                r = ConstantNode(0.0, sh)
+                context.add_dep_replace(node.id, r.id)
+                return r
 
         case BinaryNode(
             ConstantNode(0.0, sh),
-            _ as node,
+            _ as n,
             _ as op,
             _
         ):
             is_new = True
             if op == BinaryOp.ADD:
-                return node
+                context.add_dep_replace(node.id, n.id)
+                return n
             elif op == BinaryOp.MULT:
                 return ConstantNode(0.0, sh)
 
@@ -59,6 +65,7 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
             _
         ):
             is_new = True
+            context.add_dep_replace(node.id, n.id)
             return n
 
         case BinaryNode(
@@ -68,6 +75,7 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
             _
         ):
             is_new = True
+            context.add_dep_replace(node.id, n.id)
             return n
 
         ################ Unary simplfication of constant ################
@@ -99,8 +107,9 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
                 case UnaryOp.LESS_OR_EQ_ZERO:
                     result_val = float(c <= 0.0)
 
-                    
-            return ConstantNode(result_val, sh)
+            ret = ConstantNode(result_val, sh)
+            context.add_dep_replace(node.id, ret.id)
+            return ret
 
     # if on parent node, reset the visited and is_new for going through the child
     if not on_child:

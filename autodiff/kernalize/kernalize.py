@@ -2,7 +2,7 @@ from ..expr import *
 from ..expr.simplify import simplify_expr
 from ..helper import global_to_ndim, ndim_to_global, walk_graph, ndim_change_datacmds
 from ..node import Node
-from ..context import Context
+from ..context import Context, context
 
 from ..graph import *
 from . import KernelArg, KMatrix, KConcat, KConstant
@@ -19,13 +19,9 @@ def pot_child_datacmd (node: Node) -> Tuple[Node, Optional[Node], bool]:
         return (node, None, False)
 
     match node:
-        case PermuteNode() as n:
-            return (node.child, n, True)
-        case ViewNode() as n:
-            return (node.child, n, True)
-        case BroadcastNode() as n:
-            return (node.child, n, True)
-        case IndexNode() as n:
+        case PermuteNode() | ViewNode() | BroadcastNode() | IndexNode() as n:
+            if n.id in context.deps:
+                raise Exception("A non contigious node is added to dependency. Use .contigious()")
             return (node.child, n, True)
      
     return (node, None, False)

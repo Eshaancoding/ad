@@ -5,16 +5,16 @@ from autodiff.nn.normalization.layernorm import LayerNorm
 from autodiff.nn.transformer import TransformerEncoder
 from autodiff.print_graph import pg
 
-mod = LayerNorm(256)
-opt = SGD(mod.parameters())
+x = Tensor.randn([5,2])
+y = Tensor.randn([1,2])
 
-x = Tensor.randn([2, 256])
-res = mod(x)
+res = x * y + 2
+res = res.T()
 
-pg(res)
+res_two = res * 3
 
 res.keep()
-res.backward()
-opt.step()
-
+res_two.keep()
 execute()
+
+print(res.val)

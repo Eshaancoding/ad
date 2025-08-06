@@ -2,6 +2,7 @@ from typing import Callable, List, Optional
 from .node import Node
 from colored import Fore, Style
 from .print_graph import pg
+import numpy as np
 
 class Proc ():
     def __init__(self, proc: List[Node]):
@@ -77,7 +78,6 @@ class Block ():
 # Includes procedure tracking, dependency list, and unique id generation
 class Context ():
     def __init__ (self):
-        self.dep_nodes: List[Node] = []
 
         self.id = -1
         self.proc_id = -1
@@ -88,12 +88,34 @@ class Context ():
         self.temp_to_expr = {}
 
         self.deps = []         # add dependency list 
+        self.dep_nodes: List[Node] = []
+        self.dep_replace = {}
         self.lenient_dep = False 
 
+    # dependency list tracking
     def add_dep_list (self, node:Node):
-        self.deps.append(node.id)
-        self.dep_nodes.append(node)
-        
+        if node.id not in self.deps:
+            self.deps.append(node.id)
+            self.dep_nodes.append(node)
+
+    def add_dep_replace (self, fr, to):
+        if fr in self.deps:     
+            self.dep_replace[fr] = to
+            return
+        for f, t in self.dep_replace.items():
+            if t == fr:
+                self.dep_replace[f] = to
+
+    def read (self, f: Callable):
+        for dep in self.dep_nodes:
+            id = dep.id if dep.id not in self.dep_replace else self.dep_replace[dep.id]
+            try:
+                res = f(id, dep.shape)
+                dep.val = res
+            except:
+                print(f"Skipped reading buffer id: {id} - not in buffer")
+
+    # Note dependency tracking as it goes through forward and backward 
     def add_to_dep (self, node:Node):
         if not self.lock_proc:
             self.procedure[-1].add_to_dep(node) # always access the last
@@ -101,7 +123,7 @@ class Context ():
     def remove_from_dep (self, other: Node):
         if not self.lock_proc:
             self.procedure[-1].remove_from_dep(other)
-        
+
     def add_proc (self):
         self.procedure.append(Block())
         

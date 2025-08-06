@@ -41,6 +41,7 @@ def _intern_repeat_opt (context: Context):
         # check for matches
         for to_replace, to_search in matches.items():
             if node.id == to_search:
+                context.add_dep_replace(node.id, pot_nodes[to_replace].id)
                 return pot_nodes[to_replace]
         return node
 

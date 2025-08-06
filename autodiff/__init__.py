@@ -1,6 +1,6 @@
 from autodiff import device
 from autodiff.fusion.base import FuseBase
-from autodiff.opt import dep_opt, repeat_opt
+from autodiff.opt import dep_opt, mem_opt, repeat_opt
 from autodiff.opt.simplify import simpl_node
 from .context import context
 from math import prod
@@ -36,13 +36,12 @@ def execute ():
     from .linearize import linearize
     from .alloc import alloc
     from .device.opencl import OpenCLDevice, CLDevice
+    from .opt import mem_opt
 
     # lock procedure
     context.lock_proc = True
 
     # perform optimizations 
-    # 1. make sure dep node gets replaced if there's any changes to the node
-
     benchmark(lambda: dep_opt(context), "dep_opt")    # delete nodes that are not needed or computed
     benchmark(lambda: simpl_node(context), "simplify node")
     benchmark(lambda: repeat_opt(context), "repeat_opt") # re-use nodes already computed
@@ -58,7 +57,7 @@ def execute ():
     proc = benchmark(lambda: linearize(context.main_proc()), "linearize")
 
     # perform memory optimization
-    #proc = benchmark(lambda: mem_opt(proc), "mem opt")
+    proc = benchmark(lambda: mem_opt(proc), "mem opt")
 
     # apply linear optimizations
     # Dep opt, mem opt, as well as some memory accessing regrouping if needed
@@ -66,6 +65,8 @@ def execute ():
     # Apply allocations + opts on allocs
 
     alloc(proc)
+
+    print(proc)
 
     # assign program id for each node that is about to be executed
     def assign_program_id (n: Node, _):

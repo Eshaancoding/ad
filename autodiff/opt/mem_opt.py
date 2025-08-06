@@ -20,7 +20,7 @@ idx = 0
 
 def mem_opt (proc: Proc):
     global idx
-    deps = context.deps
+    deps = context.deps + list(context.dep_replace.values())
 
     # track the dep_list
     ref_location: Dict[int, List[Tuple[int, int]]] = {}
