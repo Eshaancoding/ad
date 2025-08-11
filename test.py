@@ -5,16 +5,17 @@ from autodiff.nn.normalization.layernorm import LayerNorm
 from autodiff.nn.transformer import TransformerEncoder
 from autodiff.print_graph import pg
 
-x = Tensor.randn([5,2])
-y = Tensor.randn([1,2])
+#x = Tensor.randn([5,2])
+y = Tensor.fill(1, [1,2])
+z = Tensor.fill(2, [1,2])
 
-res = x * y + 2
-res = res.T()
-
-res_two = res * 3
+x = z + y # 3
+x += 3.0  # 6
+res = x + y # 6 + 1 = 7
 
 res.keep()
-res_two.keep()
 execute()
 
 print(res.val)
+print(y.val)
+print(z.val)

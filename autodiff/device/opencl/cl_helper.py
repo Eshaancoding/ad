@@ -4,6 +4,7 @@ Definitely inspired by tinygrad opencl initialization + opencl.py. Thanks :D
 """
 
 import ctypes
+from math import prod
 from typing import Optional, List
 from . import opencl as cl
 from enum import Enum
@@ -151,7 +152,7 @@ def init_buffer (context: cl.struct__cl_context, size: int, content: Optional[np
     """
     
     if content is not None:
-        assert content.dtype == np.float32, "Content must be a float32 array!"
+        content = content.astype(np.float32)
         float_ptr = content.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
         void_ptr = ctypes.cast(float_ptr, ctypes.c_void_p)
 
@@ -174,7 +175,7 @@ def read_buffer (
     buffer: cl.struct__cl_mem, 
     size: int,
     shape: Optional[List[int]] = None
-):
+) -> np.array:
     """
     Reads buffer object using opencl. Note that this is a BLOCKING operation.
     """
@@ -196,6 +197,36 @@ def read_buffer (
     ))
 
     return out_array
+
+def write_buffer (
+    command_queue: cl.struct__cl_command_queue,
+    buffer: cl.struct__cl_mem, 
+    offset:int,
+    content: np.array, 
+):
+    # prepare content
+    content = content.astype(np.float32)
+    float_ptr = content.ctypes.data_as(ctypes.POINTER(ctypes.c_float)) 
+    void_ptr = ctypes.cast(float_ptr, ctypes.c_void_p) 
+
+    # prep offset
+    offset = ctypes.c_size_t(offset) 
+
+    # prep size
+    size = ctypes.c_size_t(content.nbytes)
+
+    # call
+    check(cl.clEnqueueWriteBuffer(
+        command_queue,
+        buffer,
+        True,
+        0,
+        size,
+        void_ptr,
+        0,
+        None,
+        None
+    ))    
 
 ############################ Kernels ############################# 
 """

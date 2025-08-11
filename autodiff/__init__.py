@@ -1,5 +1,6 @@
 from autodiff import device
 from autodiff.fusion.base import FuseBase
+from autodiff.graph.data.feeder import Feeder
 from autodiff.opt import dep_opt, mem_opt, repeat_opt
 from autodiff.opt.simplify import simpl_node
 from .context import context
@@ -30,6 +31,8 @@ def dot (left: Node, right: Node) -> Node:
     from .graph import DotProdNode
     return DotProdNode(left, right)
 
+##########################################
+## Execution
 def execute ():
     # from .core.kernelize import kernalize
     from .kernalize.kernalize import kernalize
@@ -43,14 +46,11 @@ def execute ():
 
     # perform optimizations 
     benchmark(lambda: dep_opt(context), "dep_opt")    # delete nodes that are not needed or computed
-    benchmark(lambda: simpl_node(context), "simplify node")
+    benchmark(lambda: simpl_node(context), "simplify node") # apply graph-level optimizations (ex: constant simplification)
     benchmark(lambda: repeat_opt(context), "repeat_opt") # re-use nodes already computed
 
-    # apply graph-level optimizations (ex: constant simplification)
-    
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
-    # in future releases, we can have the capabiltiy for nodes to have more than 3 childrens. However, for now this is not implemented
     benchmark(lambda: kernalize(context), "kernalize")
 
     # Linearize + fusion
@@ -59,11 +59,9 @@ def execute ():
     # perform memory optimization
     proc = benchmark(lambda: mem_opt(proc), "mem opt")
 
-    # apply linear optimizations
-    # Dep opt, mem opt, as well as some memory accessing regrouping if needed
+    # apply linear optimizations (dep opt, mem opt, as well as some memory accessing regrouping if needed)
     # see if you can make fusion better here as well (test)
     # Apply allocations + opts on allocs
-
     alloc(proc)
 
     print(proc)

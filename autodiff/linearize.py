@@ -59,7 +59,6 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
         g_dep[n_id] = list(filter(lambda item: item not in already_decl, g_dep[n_id]))
     g_dep = {key:val for key, val in g_dep.items() if len(val) > 0}
 
-    
     # toposort
     toposort_res = list(toposort(g_dep))
 

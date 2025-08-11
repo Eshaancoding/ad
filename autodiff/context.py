@@ -110,6 +110,7 @@ class Context ():
         for dep in self.dep_nodes:
             id = dep.id if dep.id not in self.dep_replace else self.dep_replace[dep.id]
             try:
+                #print(f"Reading: {id}")
                 res = f(id, dep.shape)
                 dep.val = res
             except:

@@ -1,3 +1,4 @@
+from autodiff.graph.data.feeder import Feeder
 from ..expr import *
 from ..expr.simplify import simplify_expr
 from ..helper import global_to_ndim, ndim_to_global, walk_graph, ndim_change_datacmds
@@ -200,6 +201,10 @@ def calc_exprs (node: Node, _):
 
             # remove data cmds
             n.children_datacmds = None
+
+        # set kres for feeder
+        case Feeder() as n:
+            n.kres = make_res_arg(n.id, is_global=True, shape=n.shape) 
 
     return node
         

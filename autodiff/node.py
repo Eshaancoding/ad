@@ -38,6 +38,7 @@ class Node:
         self.val = None # for representing output after execution
 
         # set the self.left, self.right, or self.child at children
+        # It's easier to seperate them like this rather than having one single list[Node]
         if len(children) == 1:
             self.child: Node = children[0]
         elif len(children) == 2:
@@ -45,8 +46,10 @@ class Node:
             self.right: Node = children[1]
         elif len(children) != 0:
             raise TypeError("Children length is invalid (expected one or two)")
-        
-        self.shape = shape
+        #else:
+            #self.rec_children = children # only in the case of receiver node  
+
+        self.shape = list(shape) # set shape
         
     def bck (self, grad):
         raise NotImplementedError
@@ -102,7 +105,7 @@ class Node:
             return [self.child]
         else:
             return []
-
+ 
     # gets the children ids from kwargs (used often at linearize, after kernalize operation is done)
     def kargs_child_ids (self, filter_temp=False):
         r = []
@@ -203,17 +206,17 @@ class Node:
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape), only_right_broadcast=True)
         return BinaryNode(a, b, BinaryOp.ADD, in_place=True)
-
+ 
     def __isub__ (self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape) * -1.0, only_right_broadcast=True)
         return BinaryNode(a, b, BinaryOp.ADD, in_place=True)
-
+ 
     def __imult__ (self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape), only_right_broadcast=True)
         return BinaryNode(a, b, BinaryOp.MULT, in_place=True)
-
+ 
     def __itruediv__ (self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape).recip(), only_right_broadcast=True)

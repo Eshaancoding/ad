@@ -1,3 +1,4 @@
+from autodiff.graph.data.feeder import Feeder
 from . import *
 from ..alloc import AllocEntry, DeallocEntry
 from typing import Dict
@@ -21,7 +22,7 @@ def plot (var_entries: List[VarEntry]):
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches
     # Create the plot
-    fig, ax = plt.subplots(figsize=(12, 10))
+    _, ax = plt.subplots(figsize=(12, 10))
 
     # Plot each rectangle
     for entry in var_entries:
@@ -170,14 +171,21 @@ def tetris_opt (proc: Proc):
         if not isinstance(node, Node):
             return node
 
+        # helper func for replacing kargs/kres
+        def add_expr (expr: Expression):
+            if entry.offset == 0:
+                return expr
+            else:
+                return Add(expr, Val(Constant(entry.offset)))
+
+        # replace karg
         for idx in range(len(node.kargs)):
             for entry in entries:
-                def add_expr (expr: Expression):
-                    if entry.offset == 0:
-                        return expr
-                    else:
-                        return Add(expr, Val(Constant(entry.offset)))
                 node.kargs[idx].rename(entry.var_id, temp_id, add_expr) 
+
+        # replace kres
+        for entry in entries:
+            if not node.kres.is_none():
                 node.kres.rename(entry.var_id, temp_id, add_expr)
 
         return node

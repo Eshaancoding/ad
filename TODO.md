@@ -2,132 +2,134 @@
 
 ## Main Todo
 
-* ~~Make sure dep node gets replaced if there's any changes to the node~~
+* Feeder (host --> device)
+    * call via function
+    * per variable basis --> create a new tensor entirely (will be replaced anyways) 
 
-* numerical test for neural networks in general 
-    * do it for at least neural net
-    * make sure it is consistent as well
-    * Although, shows promise already
+* Receiver (device --> host)
+    * call via function
+    * can replace dep opts? technically
 
-* Then do device feeder
-    * see if you can train a LLM faster than normal
-    * async transfer?
-    * Something similar to tinyllm etc.
+* Indexing via a non constant node
+    * can't do slices --> requires dynamic shapes
+    * add pytest for this
 
-* Add an assign node (dev --> node) + get node (node --> device)
-    * no dep list; this is just easier to deal with lowk
+* index available at "for" node 
+    * store copies at CPU + device.
+
+----- performance testing? save to drive  -----
+
+* Numerical tests 
+    * different opts + neural networks, etc.
+
+    * To fix errors:
+        * on linearize, support += nodes (id being reused)
+        * make sure you calculate deps accordingly (ex: alloc)
+        * etc. etc. etc. Make sure you do it accordingly
 
 * Better fusion?
     * Fusion is pretty weird, not going to lie. 
         * toposort gaur at the last step - converting to procedure
         * many to one / one to many resolve  
+    * attempt to make it as EASY AS POSSBILE to implement operator fusion
     * could be better improved...
 
-* Add CUDA support + advanced dotprod
-    * this is where you are going more into the backend kernel space
-    * look more into kernel experimentaton etc.
-
 * add more control
-* control, if, etc. etc. etc.
+    * match (selection w/ different expressons)
+    * while (w/ expressions)
 
-## Backend
-    
-* **Kernel**:
     * Divergent branching conflicts
-        * Could be more complicated on various scenarious (sources, vars, concat, trackers, etc.)        
-        * you have to know what is right and what is not right to be fair.
+        * if different, push the computation match/if statement itself
 
-    * **MEM OPTS**: Swizzling memory
-        * dependending on access patterns IF there's like a single type of access pattern
-            * if multiple, you might need to just rely on those different access patterns
-            * just check and whether you can optimize
+    * **DONE** for loops (known at compile time)
+    * **DONE**  Functions + function call
 
-        * Remove movement opt if.. 
-            * alr know contigious when 1. same id 2. same access expression
+* Then do async transfer
+    * see if you can train a LLM faster than normal
 
-    * **OPTS**: Swapping accessing expressions between input and output of two adjacent kernels?
-        * is it even possible? 
+* **MAJOR**: Kernel experimentation
+    * look into what tinygrad has done and generalize that (pretty nice generalization)
+    * contigious vs. not contigious memory (faster, or not?)
+    * ideally, try to make it as easy as possible for kernel experimentation (like kernel fusion)
 
-    * Memory experiments needed (do this movement/no movement experiment after kernel fusion)
-        * **You should test whether a weird write is slower than a fast write + movement**
-            * There's specialize transpose kernels as well...
-            * you could try experimenting with that.
-            * is there cases where fast write + movement is better?
+* **MAJOR**: dynamic shapes
+    * somehow find a way such that you can still run tetris opt... 
+        * each "tetris opt instance" must have an unique set of dynamic memory shape that can be optimized
+        * ex: (N,5) and (N,3) can be optimized together, but not (N,N)
+    * furthermore, you can override what future instructions are in the first place
+        * but...then the chip needs a feeder? interesting
+        * Current idea for chip: increase the instruction word size such that you can repeat instructions w/ different bases
+            * There will be multiple registers dedicated towards # of repeats or if single repeat
+            * this way, only requires like 1 extra clock cycle, which is really nice
+            * this could also be applied by 
+    * Different backends handle different shapes accordingly
+        * on opencl, might need to perform CPU + GPU transfer
+        * on tensorrt by nvidia, there's specific guidelines for this as well (different execution profiles without CPU intervention?)
+        * more research needs to be done in that area
+    * then, you can add dynamic slices with indexing, etc.
 
-        * **ALSO TEST**
-            * which of the following procedures is best
-                * dot product (uncontigious write) --> sum --> dot product (uncontigious read)
-                * dot product (uncontigious write) --> sum --> movement --> dot product (contigious read)
-                * dot product (contigious write) --> movement --> sum --> movement --> dot product (contigious read)
+---------------------- done before stanford? ----------------------
 
-                * etc. etc. etc. 
+* Tensor/multi-gpu sharding
 
-    * **Kernel experimentation:**
-        * Experiment with different parameters of dot prod + other kernels 
-            * [this](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html) does a good job
-            * there's other optimizations, I am sure. Don't focus on that right now, have the general base for everything first.
+* Add CUDA support + advanced dotprod (probably need an external device lowk)
+    * this is where you are going more into the backend kernel space
+    * look more into kernel experimentation (look below) etc.
 
-        * Contigious memory vs. direct accessing for dot prod kernels
-            * efficient dot product kernels assume that it is contigious 
-            * Furthermore, we assume that that `A` in `Ax` in matrix multiplication is **column-wise** rather than **row-wise**
-                * need to manually assume that there's a transpose before the A in matrix multiplication.
+* Chip project
+    * Study the computations needed around popular algos
+        * See if you can improve the design of the chip with that (ex: accessing memory for non-contigious tensors) 
+    * Read more about chip-to-chip interconnect  
+        * Per-layer sharding --> top-down approach
+            * this is good for training especially
+        * across-layer sharding --> side-by-side approach
+            * ex: splitting heads
 
-        * How/where to organize this? Each device will have different kernels which will have different params to opts...
-            * probably within each device?  
-            * **YOU NEED BOTH**
+## Extra Links:
 
-    * **Kernel Fusion**
-        * ~~do basic multiple binary/unary kernel fusion~~
-        * dot prod impl is kinda wacky
-            * access expression assumes global id...
-        * anyway to do dotprod fusion?  
-            * similar to flash attention
-            * look into optimized [link](https://siboehm.com/articles/22/CUDA-MMM)
-            * even better optimization for [kernels](https://salykova.github.io/sgemm-gpu)
-            * technically, there's even more [kernels at llm.c](https://github.com/karpathy/llm.c/tree/master/dev/cuda)
-            * more kernel opt (+ read kernel fusion) [here](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html)
-            * transpose operator faster: [here](https://veitner.bearblog.dev/making-matrix-transpose-really-fast-on-hopper-gpus/)
-                * prolly uses this: [here](https://veitner.bearblog.dev/tma-introduction/)
-            * even faster kernel stuff for generation: [here](https://www.together.ai/blog/chipmunk)
-                * The entire purpose of **TogetherAI** is optimizing kernels in a way.
-            * There are more and more special features of hardware on more and more GPUs:
-                * [link](https://tridao.me/blog/2024/flash3/)
-            * life is not all that simple now is it hehe
-        * you need more knowledge of all of this before you go into this optimizations
-            * not sure if you can beat hand-tune optimizations
-        * There's recent work on kernel fusion of **everything** somehow
-            * however, you'd have to handle your own GPU synchronization. **THIS CAN BE A BENEFIT**.
+**Better kernel fusion**:
+* look into optimized [link](https://siboehm.com/articles/22/CUDA-MMM)
+* even better optimization for [kernels](https://salykova.github.io/sgemm-gpu)
+* technically, there's even more [kernels at llm.c](https://github.com/karpathy/llm.c/tree/master/dev/cuda)
+* more kernel opt (+ read kernel fusion) [here](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html)
+* transpose operator faster: [here](https://veitner.bearblog.dev/making-matrix-transpose-really-fast-on-hopper-gpus/)
+    * prolly uses this: [here](https://veitner.bearblog.dev/tma-introduction/)
+* even faster kernel stuff for generation: [here](https://www.together.ai/blog/chipmunk)
+    * The entire purpose of **TogetherAI** is optimizing kernels in a way.
+* There are more and more special features of hardware on more and more GPUs:
+    * [link](https://tridao.me/blog/2024/flash3/)
 
- * **Node Opts**
-    * Concat + view operations can be streamlined
-        * this is mostly due to **concat**. If I am being honest, there's probably a better way for implementing backward pass for concat? I believe
-            * maybe not 
-        * Should be replaced in graphical format
-        * main problem with transformer implementation right now (and well, any other implementations)
+**Kernel experimentation**
 
-    * View removal
-        * If multiple views in sequence, just turn it into the one single view (the last view operation)
-        * if view is already in shape, then delete
+* [this](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html) does a good job
 
-    * Remove double permutations
-        * if `b = a.permute([1, 0])` followed by `c = b.permute([1, 0])`, this is the same as the original input `a`
-        * transpose via transpose
+## Experiments
+    
+* **MEM OPTS**: Swizzling memory
+    * dependending on access patterns IF there's like a single type of access pattern
+        * if multiple, you might need to just rely on those different access patterns
+        * just check and whether you can optimize
+        * if so, move to the if statement itself. 
 
-    * More aggressive IR optimizations for localization:
-        * Also test for RNN, Transformers --> improve library
-        * Then you can improve the IR optimizations as well. 
+    * Remove movement opt if.. 
+        * alr know contigious when 1. same id 2. same access expression
+
+* Swapping accessing expressions between input and output of two adjacent kernels?
+    * is it even possible? 
+
+* Memory experiments needed (do this movement/no movement experiment after kernel fusion)
+    * **You should test whether a weird write is slower than a fast write + movement**
+        * There's specialize transpose kernels as well...
+        * you could try experimenting with that.
+        * is there cases where fast write + movement is better?
+
+    * **ALSO TEST**
+        * which of the following procedures is best
+            * dot product (uncontigious write) --> sum --> dot product (uncontigious read)
+            * dot product (uncontigious write) --> sum --> movement --> dot product (contigious read)
+            * dot product (contigious write) --> movement --> sum --> movement --> dot product (contigious read)
+
             * etc. etc. etc. 
-
-    * Prox opt doesn't have safegaurd for IF/While? (tests still work surprisingly)
-
-
-* **General Ideas**: 
-    * Dynamic Shape
-
-    * Cuda graphs
-        * have to use BR compiler hints in order to determine while or if statement
-        * you may also need to send extra compiler hints 
-        * skdjfksjdfkjsdkfjskdfjksdjf that's also going to be pretty weird.
 
 ## Frontend
 
@@ -163,7 +165,6 @@
         * NLLLoss
         * KLDiv loss
     * .product(); like .sum()?
-
 * Other operations?
     * vstack, hstack <-- simple wrapper over cat
     * split tensor

@@ -1,3 +1,4 @@
+from autodiff.graph.data.feeder import Feeder
 from . import *
 from math import prod
 from typing import Dict, Set, Tuple
@@ -26,7 +27,6 @@ def insert_alloc (main_proc: Proc) -> Dict[int, FuseBase]:
                 # record res allocations 
                 r = list(get_res(n))[0]
 
-                     
                 if r in insert_locs:
                     insert_locs[r][0].size = max(insert_locs[r][1].size, prod(n.shape)) # if reused, ensure max shape 
                 elif r in id_to_size:

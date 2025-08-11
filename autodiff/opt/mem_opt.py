@@ -31,8 +31,9 @@ def mem_opt (proc: Proc):
         global idx
 
         for r in get_res(node):
-            ref_location[r] = []
-            res_location[r] = proc_id
+            if r not in deps:
+                ref_location[r] = []
+                res_location[r] = proc_id
 
         for d in get_deps(node):
             if d in ref_location:
@@ -65,7 +66,8 @@ def mem_opt (proc: Proc):
             return node # skip if no res
         res = res[0]
 
-        # don't replace with reduce operations, dot prod 
+        # don't replace with reduce operations, dot prod, or contigious
+        # furthermore, don't replace if node is in deps in the first place
         if isinstance(node, DotProdNode) or \
             isinstance(node, ReduceNode) or \
             isinstance(node, ContigiousNode) or \
@@ -77,6 +79,9 @@ def mem_opt (proc: Proc):
         
         repl = [] 
         for dep in get_deps(node):
+            if dep not in res_location: 
+                continue
+
             # ensure that the proc id for dep is the same as the proc id
             if res_location[dep] != proc_id:
                 continue

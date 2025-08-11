@@ -44,7 +44,16 @@ class OpenCLDevice (Device):
 
     def init (self, cmd):
         from .kernels import init_dotprod, init_unary, init_binary, init_reduce, init_contigious, init_elwfuse, init_dp_elw_fuse, init_reduce_elw_fuse
+        
+        kern = None
+        func = None
+
         match cmd:
+            case Feeder():
+                # just assert the offset. Ideally, should be done earlier (because this is shared across devices)
+                cmd.kres_id = cmd.kres.get_ids()[0]
+                cmd.assert_offset()
+                return
             case AllocEntry():
                 if not cmd.is_temp:
                     self.buffers[cmd.id] = init_buffer(self.context, cmd.size, cmd.content)
@@ -61,14 +70,21 @@ class OpenCLDevice (Device):
             case DeallocEntry(): return
             case ForNode(): return # handled by upper level
 
+        assert (kern is not None and func is not None), f"Encountered unexpected cmd: {cmd}"
+
         self.kernels[cmd.program_id] = kern
         self.funcs[cmd.program_id] = func
 
     def run (self, cmd):
         match cmd:
-            case AllocEntry(): pass
+            case AllocEntry(): pass 
             case DeallocEntry(): pass
-            case ForNode(): pass
+            case ForNode(): pass 
+            case Feeder():
+                #arr = cmd.func()
+                #assert isinstance(arr, np.ndarray) and list(arr.shape) == list(cmd.shape), "Invalid function"
+                #write_buffer(self.queue, self.buffers[cmd.kres_id], cmd.offset, arr)
+                pass
             case _:
                 self.funcs[cmd.program_id]() # enqueue to buffer
 
@@ -106,7 +122,9 @@ class OpenCLDevice (Device):
         print(f"Freed {len(self.buffers)} buffers")
 
         # free kernels
+        print(len(self.kernels))
         for kernel in self.kernels.values():
+            print("kernel freeing")
             free_kernel(kernel) 
         print(f"Freed {len(self.kernels)} kernels")
 

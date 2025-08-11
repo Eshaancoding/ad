@@ -27,7 +27,7 @@ def lower_elwfuse (fused_cmd: ElwFuse):
 def init_elwfuse (dev: OpenCLDevice, cmd: ElwFuse):
     name = f"elwfuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
-
+    
     # construct program
     program_str = f"""
 __kernel void {name} (

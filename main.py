@@ -1,7 +1,8 @@
-from autodiff import Tensor, execute, ir_for, context
+from autodiff import Tensor, execute, ir_for, context, Feeder
 from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder, SGD 
 from autodiff.nn.transformer import * 
 from autodiff.helper import benchmark
+import numpy as np
 
 context.lenient_dep = True
 
@@ -27,20 +28,25 @@ else:
         Sigmoid()
     )
 
-inp = Tensor.randn((2, 512))
+idx = 0
+def get_inp ():
+    global idx
+    if (idx+1) % 10 == 0:
+        print(f"Get inp Idx: {idx+1}")
+    idx += 1
+    return np.full((2,512), 1.0, dtype=np.float32)
+
 opt = SGD(nn.parameters(), lr=0.01)
+inp_randn = Tensor.randn([2, 512])
 def f():
-    res = nn(inp)
-    res.keep()
+    opt.zero_grad()
+    #val = Feeder(get_inp, shape=[2,512], name="Get input")
+    val = inp_randn
+    res = nn(val)
+    #res.keep()
     res.backward() 
     opt.step()
 
 # In future release pass the idx
-benchmark(lambda: ir_for(range(0, 10), f), name="Tracking nodes")
+benchmark(lambda: ir_for(range(0, 100), f), name="Tracking nodes")
 benchmark(lambda: execute(), name="full exec")
-
-# ********* EXEC TIME: 922.099 ms **********
-# with tetris opt
-
-
-# ********* EXEC TIME: 941.764 ms **********
