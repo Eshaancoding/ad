@@ -1,15 +1,20 @@
 from .base import FuseBase, Node, AllocEntry
 from typing import Set, List, Dict
 from toposort import toposort
+from ..helper import walk_graph
 
 def get_deps (node: Node|FuseBase|AllocEntry, step_proc:bool=False) -> Set[int]:
+    """ Note, uses kernalize result """
     from .base import FuseBase
     if isinstance(node, Node):
-        if step_proc and (block := node.get_proc()) is not None:
+        if step_proc and (proc := node.get_proc()) is not None:
+            res_defined = get_res(node, True)
+
             ret = []
-            for n in block.procedure:
+            for n in proc.procedure:
                 ret.extend(get_deps(n, True))
-            return set(ret) 
+
+            return set(filter(lambda x: x not in res_defined, ret))
         else:
             return set(node.kargs_child_ids())
     elif isinstance(node, FuseBase):
@@ -29,13 +34,13 @@ def print_toposort (toposort_res, id_to_node):
 def get_res (node: Node|FuseBase|AllocEntry, step_proc:bool=False) -> Set[int]:
     from .base import FuseBase
     if isinstance(node, Node):
-        if step_proc and (block := node.get_proc()) is not None:
+        if step_proc and (proc := node.get_proc()) is not None:
             ret = []
-            for n in block.procedure:
-                ret.extend(get_deps(n, True))
+            for n in proc.procedure:
+                ret.extend(get_res(n, True))
             return set(ret) 
         else:
-            return set([node.id])
+            return set([node.id]) # same as the kres id
     elif isinstance(node, FuseBase):
         r = []
         for n in node.nodes:
@@ -176,6 +181,7 @@ def flatten_toposort (toposort_res, id_to_node, already_decl):
     # Recalculate toposort
     g_dep: Dict[int, List[int]] = {}
     declared_in_fused = {}
+    alr_decl_block = {}
     for layer in toposort_res:
         for id in layer:
             node = id_to_node[id]
@@ -189,7 +195,16 @@ def flatten_toposort (toposort_res, id_to_node, already_decl):
                     if r not in already_decl:
                         declared_in_fused[r] = node.fuse_id
             elif isinstance(node, Node):
-                g_dep[node.id] = list(get_deps(node, True))
+                deps = list(get_deps(node, True))
+                for idx in range(len(deps)):
+                    deps[idx] = alr_decl_block[id] if (id := deps[idx]) in alr_decl_block else id
+                deps = list(set(deps))
+                g_dep[node.id] = deps
+
+                if node.get_block() is not None:
+                    res = get_res(node, True)
+                    for r in res:
+                        alr_decl_block[r] = node.id
 
     for n_id in g_dep:
         # if ids in fuse_id, replace
@@ -205,7 +220,10 @@ def flatten_toposort (toposort_res, id_to_node, already_decl):
 
     # recalculate toposort_res
     toposort_res = list(toposort(g_dep))
-    
+
+    from pprint import pprint
+    pprint(toposort_res)
+
     # then, we can flatten
     nodes = []
     for layer in toposort_res:

@@ -1,3 +1,4 @@
+from autodiff.expr.simplify import simplify_expr
 from autodiff.graph.data.feeder import Feeder
 from . import *
 from ..alloc import AllocEntry, DeallocEntry
@@ -70,15 +71,13 @@ def tetris_opt (proc: Proc):
 
     var_tracker: Dict[int, Dict[int, VarEntry]] = {}
 
-    deps_ids = context.deps + list(context.dep_replace.values())
-
     def walk_proc (node: Node|AllocCmds, proc_id: str):
         global idx
         if proc_id not in var_tracker:
             var_tracker[proc_id] = {}
 
         if isinstance(node, AllocEntry):
-            if not node.is_temp and node.id not in deps_ids:
+            if not node.is_temp and node.content is None: 
                 var_tracker[proc_id][node.id] = VarEntry(node.id, idx, None, node.size)
         elif isinstance(node, DeallocEntry):
             if node.id in var_tracker[proc_id] and not node.is_temp:
@@ -173,10 +172,7 @@ def tetris_opt (proc: Proc):
 
         # helper func for replacing kargs/kres
         def add_expr (expr: Expression):
-            if entry.offset == 0:
-                return expr
-            else:
-                return Add(expr, Val(Constant(entry.offset)))
+            return simplify_expr(Add(expr, Val(Constant(entry.offset))), None)
 
         # replace karg
         for idx in range(len(node.kargs)):

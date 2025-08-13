@@ -47,8 +47,11 @@ class Proc ():
         self.procedure = list(filter(lambda x: x is not None, self.procedure))
 
 class Block ():
-    def __init__(self):
+    def __init__(self, id_override=None):
         self.nodes: List[Node] = []
+
+        # "hacky way" of getting over the context initialization issue
+        self.id = id_override if id_override is not None else context.get_block_id()
 
     def add_to_dep (self, node:Node):
         self.nodes.append(node)
@@ -78,43 +81,14 @@ class Block ():
 # Includes procedure tracking, dependency list, and unique id generation
 class Context ():
     def __init__ (self):
-
         self.id = -1
         self.proc_id = -1
+        self.block_id = 0
         self.program_id = -1
 
-        self.procedure = [Block()] # first procedure is the main block
+        self.procedure = [Block(0)] # first procedure is the main block
         self.lock_proc = False
         self.temp_to_expr = {}
-
-        self.deps = []         # add dependency list 
-        self.dep_nodes: List[Node] = []
-        self.dep_replace = {}
-        self.lenient_dep = False 
-
-    # dependency list tracking
-    def add_dep_list (self, node:Node):
-        if node.id not in self.deps:
-            self.deps.append(node.id)
-            self.dep_nodes.append(node)
-
-    def add_dep_replace (self, fr, to):
-        if fr in self.deps:     
-            self.dep_replace[fr] = to
-            return
-        for f, t in self.dep_replace.items():
-            if t == fr:
-                self.dep_replace[f] = to
-
-    def read (self, f: Callable):
-        for dep in self.dep_nodes:
-            id = dep.id if dep.id not in self.dep_replace else self.dep_replace[dep.id]
-            try:
-                #print(f"Reading: {id}")
-                res = f(id, dep.shape)
-                dep.val = res
-            except:
-                print(f"Skipped reading buffer id: {id} - not in buffer")
 
     # Note dependency tracking as it goes through forward and backward 
     def add_to_dep (self, node:Node):
@@ -143,6 +117,10 @@ class Context ():
     def get_proc_id (self):
         self.proc_id += 1
         return self.proc_id 
+
+    def get_block_id (self):
+        self.block_id += 1
+        return self.block_id
 
     def get_prog_id (self):
         self.program_id += 1

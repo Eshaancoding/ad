@@ -37,10 +37,16 @@ class OpenCLDevice (Device):
         self.context = initialize_context(self.device)
         self.queue = create_command_queue(self.device, self.context)
 
+        # other variables
         self.kernels = {}
         self.funcs = {} 
         self.buffers = {}
         self.buffers_size = {}
+
+        # read buffers events
+        self.read_buffer_events = []
+        self.read_func_pointer = []
+        self.read_outputs = []
 
     def init (self, cmd):
         from .kernels import init_dotprod, init_unary, init_binary, init_reduce, init_contigious, init_elwfuse, init_dp_elw_fuse, init_reduce_elw_fuse
@@ -49,10 +55,24 @@ class OpenCLDevice (Device):
         func = None
 
         match cmd:
+            # both feeder and receiver should be done at the beginning
             case Feeder():
-                # just assert the offset. Ideally, should be done earlier (because this is shared across devices)
-                cmd.kres_id = cmd.kres.get_ids()[0]
-                cmd.assert_offset()
+                # calculate the offset of the res
+                cmd.kres.calc_offset()
+                return
+            case Receiver():
+                # calculate the offset for each receiver; preperare for async 
+                cmd.buffers = []
+                cmd.sizes = []
+                cmd.shapes = []
+                cmd.offsets = []
+                for idx in range(len(cmd.kargs)):
+                    cmd.kargs[idx].calc_offset()
+                    karg = cmd.kargs[idx]
+                    cmd.buffers.append(self.buffers[karg.id])
+                    cmd.sizes.append(self.buffers_size[karg.id])
+                    cmd.shapes.append(karg.shape)
+                    cmd.offsets.append(karg.offset)
                 return
             case AllocEntry():
                 if not cmd.is_temp:
@@ -81,10 +101,18 @@ class OpenCLDevice (Device):
             case DeallocEntry(): pass
             case ForNode(): pass 
             case Feeder():
-                #arr = cmd.func()
-                #assert isinstance(arr, np.ndarray) and list(arr.shape) == list(cmd.shape), "Invalid function"
-                #write_buffer(self.queue, self.buffers[cmd.kres_id], cmd.offset, arr)
-                pass
+                arr = cmd.func()
+                assert isinstance(arr, np.ndarray) and list(arr.shape) == list(cmd.shape), "Invalid function"
+                write_buffer(self.queue, self.buffers[cmd.kres.id], cmd.kres.offset, arr)
+            case Receiver():
+                read_buffers(
+                    self,
+                    cmd.buffers,
+                    cmd.sizes,
+                    cmd.shapes,
+                    cmd.offsets,
+                    cmd.func
+                )
             case _:
                 self.funcs[cmd.program_id]() # enqueue to buffer
 
@@ -105,15 +133,7 @@ class OpenCLDevice (Device):
         self._run_proc(proc, self.run, init=False)
         
         waitAll(self.queue)
-
-        #a = read_buffer(self.queue, buf_three, 4)
-        # read buffers accordant to their dep list
-        context.read(lambda id, shape: read_buffer(
-            self.queue, 
-            self.buffers[id], 
-            self.buffers_size[id], 
-            shape
-        ))
+        #waitForEvents(self.read_buffer_events)
 
     def __del__ (self):
         # free buffers
@@ -122,9 +142,7 @@ class OpenCLDevice (Device):
         print(f"Freed {len(self.buffers)} buffers")
 
         # free kernels
-        print(len(self.kernels))
         for kernel in self.kernels.values():
-            print("kernel freeing")
             free_kernel(kernel) 
         print(f"Freed {len(self.kernels)} kernels")
 

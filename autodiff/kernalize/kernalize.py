@@ -8,21 +8,22 @@ from ..context import Context, context
 from ..graph import *
 from . import KernelArg, KMatrix, KConcat, KConstant
 
-from typing import Optional, Dict, Tuple
+from typing import Optional, Tuple
 from enum import Enum
+from math import prod
 
 class AccessType (Enum):
     GLOBAL=1
     XY=2
     
-def pot_child_datacmd (node: Node) -> Tuple[Node, Optional[Node], bool]:
+def pot_child_datacmd (node: Node, mandate_contigious=False) -> Tuple[Node, Optional[Node], bool]:
     if len(node.children()) == 0:
         return (node, None, False)
 
     match node:
         case PermuteNode() | ViewNode() | BroadcastNode() | IndexNode() as n:
-            if n.id in context.deps:
-                raise Exception("A non contigious node is added to dependency. Use .contigious()")
+            if mandate_contigious:
+                raise Exception("A non contigious node is found where suppose to be contigious")
             return (node.child, n, True)
      
     return (node, None, False)
@@ -47,7 +48,6 @@ def fill_child_datacmds (node: Node, _):
                 if not did_repl:
                     break
 
-            return n
         case ReduceNode() | UnaryNode() | ContigiousNode() as n:
             # handle child node
             while True:
@@ -57,10 +57,18 @@ def fill_child_datacmds (node: Node, _):
                 if not did_repl:
                     break
 
-            return n
+        case Receiver() as n:
+            for idx in range(len(n.rec_children)):
+                while True:
+                    n.rec_children[idx], cmd, did_repl = pot_child_datacmd(n.rec_children[idx], mandate_contigious=True)
+                    if isinstance(cmd, Node):
+                        n.children_datacmds[idx].append(cmd)
+                    if not did_repl:
+                        break
+
     return node
                
-def make_karg (initial_dim, child: Node, data_cmds, shape, size:Optional[int]=None):
+def make_karg (initial_dim, child: Node, data_cmds, shape, size_hint:Optional[int]=None):
     if isinstance(child, ConstantNode):
         return KConstant(child.constant)
     elif isinstance(child, ConcatNode):
@@ -96,7 +104,7 @@ def make_karg (initial_dim, child: Node, data_cmds, shape, size:Optional[int]=No
         
     else:
         dim = ndim_change_datacmds(initial_dim, data_cmds)
-        dim = simplify_expr(ndim_to_global(dim, child.shape), size)
+        dim = simplify_expr(ndim_to_global(dim, child.shape), size_hint)
         return KMatrix(child.id, dim, child.shape)
    
 def make_res_arg (kern_id:int, is_global:bool, shape:list) -> KernelArg:
@@ -116,7 +124,8 @@ def make_res_arg (kern_id:int, is_global:bool, shape:list) -> KernelArg:
 def calc_exprs (node: Node, _):
     match node:
         case DotProdNode() as n:
-            assert n.children_datacmds is not None
+            if n.children_datacmds is None:
+                return n
 
             # calc left
             n.kargs[0] = make_karg(
@@ -141,8 +150,10 @@ def calc_exprs (node: Node, _):
             n.children_datacmds = None
 
         case BinaryNode() as n:
+            if n.children_datacmds is None:
+                return n
+
             size = math.prod(n.shape) 
-            assert n.children_datacmds is not None
 
             # calc left
             n.kargs[0] = make_karg(
@@ -150,7 +161,7 @@ def calc_exprs (node: Node, _):
                 child=n.left,
                 data_cmds=n.children_datacmds[0],
                 shape=n.children_shapes[0],
-                size=size
+                size_hint=size
             )
             
             n.kargs[1] = make_karg(
@@ -158,7 +169,7 @@ def calc_exprs (node: Node, _):
                 child=n.right,
                 data_cmds=n.children_datacmds[1],
                 shape=n.children_shapes[1],
-                size=size
+                size_hint=size
             )
             
             # calculate res arg
@@ -168,7 +179,8 @@ def calc_exprs (node: Node, _):
             n.children_datacmds = None
 
         case ReduceNode() as n:
-            assert n.children_datacmds is not None
+            if n.children_datacmds is None:
+                return n
 
             # calc child
             n.kargs[0] = make_karg(
@@ -185,6 +197,9 @@ def calc_exprs (node: Node, _):
             n.children_datacmds = None
         
         case UnaryNode() | ContigiousNode() as n:
+            if n.children_datacmds is None:
+                return n
+
             size = math.prod(n.shape) 
             
             # calc child
@@ -193,7 +208,7 @@ def calc_exprs (node: Node, _):
                 child=n.child,
                 data_cmds=n.children_datacmds[0],
                 shape=n.children_shapes[0],
-                size=size
+                size_hint=size
             )
             
             # calculate res arg
@@ -205,6 +220,25 @@ def calc_exprs (node: Node, _):
         # set kres for feeder
         case Feeder() as n:
             n.kres = make_res_arg(n.id, is_global=True, shape=n.shape) 
+
+        # set kchildren for receiver:
+        case Receiver() as n:
+            if n.children_datacmds is None:
+                return n
+
+            # calculate child 
+            ch = n.rec_children
+            for idx in range(len(ch)):
+                n.kargs[idx] = make_karg(
+                    initial_dim=global_to_ndim(Global(), n.children_shapes[idx]),
+                    child=ch[idx],
+                    data_cmds=n.children_datacmds[idx],
+                    shape=n.children_shapes[idx],
+                    size_hint=prod(n.children_shapes[idx])
+                )
+                
+            # remove data cmds
+            n.children_datacmds = None
 
     return node
         

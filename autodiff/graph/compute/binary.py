@@ -1,9 +1,6 @@
-from autodiff.context import context
-from autodiff.graph.tensor import Tensor
 from ...node import Node
 import math
 from enum import Enum
-from ...expr import NoneExpr
 from colored import stylize, fore, style
 
 class BinaryOp (Enum):
@@ -15,12 +12,9 @@ class BinaryNode (Node):
     def __init__(self, left: Node, right: Node, op: BinaryOp, in_place:bool = False):
         assert left.shape == right.shape, f"Dimensional mismatch at binary! {left.shape}: {left} and {right.shape}: {right}"
 
-        super().__init__([left, right], left.shape, left.id if in_place else None)
+        super().__init__([left, right], left.shape, None)
         self.op = op
         self.in_place = in_place
-
-        if self.in_place and isinstance(left, Tensor): # if in place, add to dependency list
-            context.add_dep_list(left)
     
     def bck (self, grad:Node):
         if not isinstance(grad, Node):
@@ -36,9 +30,9 @@ class BinaryNode (Node):
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
         if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
-            return f"{self.id} = {self.op} ({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.left.id}, {self.right.id})"
+            return f"{self.id} = {self.op} {"IN PLACE " if self.in_place else ""}({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.left.id}, {self.right.id})"
         else:
-            return f"{self.kres} = {self.op} ({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.kargs[0]}, {self.kargs[1]})"
+            return f"{self.kres} = {self.op} {"IN PLACE " if self.in_place else ""}({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.kargs[0]}, {self.kargs[1]})"
     
     def node_eq (self, other:Node) -> bool:
         if not isinstance(other, BinaryNode):

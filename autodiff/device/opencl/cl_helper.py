@@ -5,7 +5,8 @@ Definitely inspired by tinygrad opencl initialization + opencl.py. Thanks :D
 
 import ctypes
 from math import prod
-from typing import Optional, List
+from typing import Callable, Optional, List
+
 from . import opencl as cl
 from enum import Enum
 import numpy as np
@@ -152,7 +153,7 @@ def init_buffer (context: cl.struct__cl_context, size: int, content: Optional[np
     """
     
     if content is not None:
-        content = content.astype(np.float32)
+        assert content.dtype == np.float32, "Content is not np.float32"
         float_ptr = content.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
         void_ptr = ctypes.cast(float_ptr, ctypes.c_void_p)
 
@@ -170,33 +171,134 @@ def init_buffer (context: cl.struct__cl_context, size: int, content: Optional[np
 def free_buffer (buffer: cl.struct__cl_mem):
     check(cl.clReleaseMemObject(buffer))
 
-def read_buffer (
-    command_queue: cl.struct__cl_command_queue, 
-    buffer: cl.struct__cl_mem, 
-    size: int,
-    shape: Optional[List[int]] = None
+####### Read buffers async don't work :( ########
+def read_buffers_async (
+    dev,
+    buffers: List[cl.struct__cl_mem], 
+    sizes: List[int],
+    shapes: List[Optional[List[int]]],
+    offsets: List[int],
+    callback: Callable 
 ) -> np.array:
     """
-    Reads buffer object using opencl. Note that this is a BLOCKING operation.
+    Reads buffer object using opencl. 
     """
 
-    out_array = np.empty(shape if shape is not None else (size,), dtype=np.float32)
-    out_ptr = out_array.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
-    size = ctypes.c_size_t(out_array.nbytes)
+    for idx in range(len(buffers)):
+        buffer = buffers[idx]
+        size = sizes[idx]
+        shape = shapes[idx]
+        offset = offsets[idx]
 
-    check(cl.clEnqueueReadBuffer(
-        command_queue,      # command queue pointer
-        buffer,             # buffer pointer
-        True,               # blocking_read = CL_TRUE
-        0,                  # offset
-        size,               # size
-        out_ptr,            # pointer to host memory
-        0,                  # num_events_in_wait_list
-        None,               # event_wait_list
-        None                # event
-    ))
+        # prepare content
+        dev.read_outputs.append(np.empty(shape if shape is not None else (size,), dtype=np.float32))
+        out_ptr = dev.read_outputs[-1].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
 
-    return out_array
+        # prep size
+        size = ctypes.c_size_t(dev.read_outputs[-1].nbytes)
+
+        # prep offset
+        offset = ctypes.c_size_t(offset*4) # again, depends on dtype
+
+        # note, relies on sequential operation (not setting event wait list)
+        if idx == len(buffers)-1:
+            # prep event
+            dev.read_buffer_events.append(cl.cl_event())
+
+            # prep function
+            def func (event_ptr, status, user_data):
+                out = ctypes.cast(user_data, ctypes.POINTER(ctypes.c_int32))
+                print(out.contents.value)
+                
+                pass
+                #callback(*dev.read_outputs)
+                #print(len(dev.read_outputs), len(dev.read_buffer_events), len(dev.read_func_pointer))
+
+            func_ty = ctypes.CFUNCTYPE(
+                None,
+                ctypes.POINTER(cl.struct__cl_event),
+                cl.cl_int,
+                ctypes.c_void_p
+            )
+
+            dev.read_func_pointer.append(func_ty(func))
+
+            # enqueue read buffer
+            check(cl.clEnqueueReadBuffer(
+                dev.queue,          # command queue pointer
+                buffer,             # buffer pointer
+                False,              # blocking_read = False
+                offset,             # offset
+                size,               # size
+                out_ptr,            # pointer to host memory
+                0,                  # num_events_in_wait_list
+                None,               # event_wait_list
+
+                # event
+                dev.read_buffer_events[-1]               
+            ))
+
+            # attach cl function to event
+            check(cl.clSetEventCallback(
+                dev.read_buffer_events[-1],
+                cl.CL_COMPLETE,
+                dev.read_func_pointer[-1],
+                ctypes.cast(ctypes.pointer(ctypes.c_int32(34)), ctypes.c_void_p)
+            ))
+        else:
+            check(cl.clEnqueueReadBuffer(
+                dev.queue,          # command queue pointer
+                buffer,             # buffer pointer
+                False,              # blocking_read = False
+                offset,             # offset
+                size,               # size
+                out_ptr,            # pointer to host memory
+                0,                  # num_events_in_wait_list
+                None,               # event_wait_list
+                None,               # event
+            ))
+
+def read_buffers (
+    dev,
+    buffers: List[cl.struct__cl_mem], 
+    sizes: List[int],
+    shapes: List[Optional[List[int]]],
+    offsets: List[int],
+    callback: Callable
+):
+    
+    outs = []
+    
+    for idx in range(len(buffers)):
+        buffer = buffers[idx]
+        size = sizes[idx]
+        shape = shapes[idx]
+        offset = offsets[idx]
+
+        # prepare content
+        outs.append(np.empty(shape if shape is not None else (size,), dtype=np.float32))
+        out_ptr = outs[-1].ctypes.data_as(ctypes.POINTER(ctypes.c_float))
+
+        # prep size
+        size = ctypes.c_size_t(outs[-1].nbytes)
+
+        # prep offset
+        offset = ctypes.c_size_t(offset*4) # again, depends on dtype
+
+        # note, relies on sequential operation (not setting event wait list)
+        check(cl.clEnqueueReadBuffer(
+            dev.queue,          # command queue pointer
+            buffer,             # buffer pointer
+            True,               # blocking_read = False
+            offset,             # offset
+            size,               # size
+            out_ptr,            # pointer to host memory
+            0,                  # num_events_in_wait_list
+            None,               # event_wait_list
+            None,               # event
+        ))
+
+    callback(*outs)
 
 def write_buffer (
     command_queue: cl.struct__cl_command_queue,
@@ -210,7 +312,7 @@ def write_buffer (
     void_ptr = ctypes.cast(float_ptr, ctypes.c_void_p) 
 
     # prep offset
-    offset = ctypes.c_size_t(offset) 
+    offset = ctypes.c_size_t(offset*4) # again, depends on dtype
 
     # prep size
     size = ctypes.c_size_t(content.nbytes)
@@ -219,7 +321,7 @@ def write_buffer (
     check(cl.clEnqueueWriteBuffer(
         command_queue,
         buffer,
-        True,
+        False,
         0,
         size,
         void_ptr,
@@ -353,6 +455,11 @@ def build_kernel (
 
 def waitAll (command_queue: cl.struct__cl_command_queue):
     cl.clFinish(command_queue)
+
+def waitForEvents (events):
+    event_array_type = cl.cl_event * len(events)
+    event_array = event_array_type(*events)
+    cl.clWaitForEvents(len(events), event_array)
 
 def free_kernel (kernel: cl.struct__cl_kernel):
     cl.clReleaseKernel(kernel)

@@ -13,6 +13,7 @@ from autodiff.graph.compute.binary import BinaryNode, BinaryOp
 from autodiff.graph.compute.dotprod import DotProdNode
 from autodiff.graph.compute.reduce import ReduceNode
 from autodiff.graph.data.contigious import ContigiousNode
+from autodiff.graph.data.receiver import Receiver
 from autodiff.node import Node
 from typing import Dict, List, Set, Tuple
 
@@ -20,7 +21,6 @@ idx = 0
 
 def mem_opt (proc: Proc):
     global idx
-    deps = context.deps + list(context.dep_replace.values())
 
     # track the dep_list
     ref_location: Dict[int, List[Tuple[int, int]]] = {}
@@ -30,8 +30,13 @@ def mem_opt (proc: Proc):
     def track_res_loc (node: Node, proc_id: int):
         global idx
 
+        # let receiver have its unique id; skip
+        if isinstance(node, Receiver):
+            idx += 1
+            return node
+
         for r in get_res(node):
-            if r not in deps:
+            if isinstance(node, Receiver): 
                 ref_location[r] = []
                 res_location[r] = proc_id
 
@@ -43,7 +48,6 @@ def mem_opt (proc: Proc):
             in_place_ids.add(node.id)
     
         idx += 1
-
         return node
 
     idx = 0  # reset
@@ -71,8 +75,7 @@ def mem_opt (proc: Proc):
         if isinstance(node, DotProdNode) or \
             isinstance(node, ReduceNode) or \
             isinstance(node, ContigiousNode) or \
-            res in in_place_ids or \
-            res in deps:
+            res in in_place_ids:
 
             idx += 1
             return node

@@ -6,7 +6,6 @@ from autodiff.helper import walk_graph
 def _intern_repeat_opt (context: Context):
     
     pot_nodes: Dict[int, Node] = {}
-    deps = context.deps
     
     def track_nodes (node: Node, _visited):
         # check if dep two node
@@ -33,7 +32,7 @@ def _intern_repeat_opt (context: Context):
                 continue
             
             if node_one.node_eq(node_two):
-                if node_two_id not in matches and node_two_id not in deps:
+                if node_two_id not in matches:
                     matches[node_one_id] = node_two_id
     
     # given matches, replace

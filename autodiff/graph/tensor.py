@@ -13,12 +13,7 @@ class Tensor (Node):
     def __init__ (self, arr: np.array):
         super().__init__([], list(arr.shape))
 
-        self.arr = arr.astype(np.float32) # ensure float32
-
-        # always add dep list of this
-        from ..context import context  
-
-        context.add_dep_list(self) 
+        self.arr = arr.astype(np.float32) # ensure float32 (might make a copy)
         self.grad_tensor = None
 
     def bck (self, grad):
@@ -27,11 +22,6 @@ class Tensor (Node):
             
         if self.grad_tensor is None:
             self.grad_tensor = grad
-
-            # add to grad to dep list only if lenient_dep
-            from ..context import context  
-            if context.lenient_dep:
-                context.add_to_dep(self.grad_tensor)
         else:
             self.grad_tensor += grad 
             

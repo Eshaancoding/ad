@@ -25,19 +25,18 @@ def insert_alloc (main_proc: Proc) -> Dict[int, FuseBase]:
                 assert isinstance(n, Node)
 
                 # record res allocations 
-                r = list(get_res(n))[0]
+                if not isinstance(n, Receiver):
+                    r = list(get_res(n))[0]
+                    if r in insert_locs:
+                        insert_locs[r][0].size = max(insert_locs[r][1].size, prod(n.shape)) # if reused, ensure max shape 
+                    elif r in id_to_size:
+                        # declared in a tensor if not declared in insert_locs but declared in id_to_size
+                        assert id_to_size[r] == prod(n.shape), "In place operation dimension are not equal when inserting alloc"
+                    else:
+                        insert_locs[r] = (loc, AllocEntry(r, prod(n.shape)))
 
-                if r in insert_locs:
-                    insert_locs[r][0].size = max(insert_locs[r][1].size, prod(n.shape)) # if reused, ensure max shape 
-                elif r in id_to_size:
-                    # declared in a tensor if not declared in insert_locs but declared in id_to_size
-                    assert id_to_size[r] == prod(n.shape), "In place operation dimension are not equal when inserting alloc"
-                else:
-                    insert_locs[r] = (loc, AllocEntry(r, prod(n.shape)))
-
-                tracker[n.id] = False
-                
-                id_to_size[n.id] = prod(n.shape)
+                    tracker[n.id] = False
+                    id_to_size[n.id] = prod(n.shape)
                 
                 # record dealloc
                 deps = get_deps(n)

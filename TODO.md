@@ -2,31 +2,6 @@
 
 ## Main Todo
 
-* Feeder (host --> device)
-    * call via function
-    * per variable basis --> create a new tensor entirely (will be replaced anyways) 
-
-* Receiver (device --> host)
-    * call via function
-    * can replace dep opts? technically
-
-* Indexing via a non constant node
-    * can't do slices --> requires dynamic shapes
-    * add pytest for this
-
-* index available at "for" node 
-    * store copies at CPU + device.
-
------ performance testing? save to drive  -----
-
-* Numerical tests 
-    * different opts + neural networks, etc.
-
-    * To fix errors:
-        * on linearize, support += nodes (id being reused)
-        * make sure you calculate deps accordingly (ex: alloc)
-        * etc. etc. etc. Make sure you do it accordingly
-
 * Better fusion?
     * Fusion is pretty weird, not going to lie. 
         * toposort gaur at the last step - converting to procedure
@@ -34,23 +9,28 @@
     * attempt to make it as EASY AS POSSBILE to implement operator fusion
     * could be better improved...
 
-* add more control
+* Better simplification of nodes
+    * constant simplificaton, etc.
+
+* Numerical tests 
+    * different opts + neural networks, etc.
+    * To fix errors:
+        * etc. etc. etc. Make sure you do it accordingly
+
+----- performance testing? save to drive  -----
+
+* **MAJOR** add more control
     * match (selection w/ different expressons)
     * while (w/ expressions)
 
-    * Divergent branching conflicts
-        * if different, push the computation match/if statement itself
-
     * **DONE** for loops (known at compile time)
     * **DONE**  Functions + function call
-
-* Then do async transfer
-    * see if you can train a LLM faster than normal
 
 * **MAJOR**: Kernel experimentation
     * look into what tinygrad has done and generalize that (pretty nice generalization)
     * contigious vs. not contigious memory (faster, or not?)
     * ideally, try to make it as easy as possible for kernel experimentation (like kernel fusion)
+    * [this](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html) does a good job
 
 * **MAJOR**: dynamic shapes
     * somehow find a way such that you can still run tetris opt... 
@@ -68,13 +48,32 @@
         * more research needs to be done in that area
     * then, you can add dynamic slices with indexing, etc.
 
+* Indexing via a non constant node
+    * can't do slices --> requires dynamic shapes
+    * add pytest for this
+
 ---------------------- done before stanford? ----------------------
 
-* Tensor/multi-gpu sharding
+* More frontend support (see below)
 
 * Add CUDA support + advanced dotprod (probably need an external device lowk)
     * this is where you are going more into the backend kernel space
     * look more into kernel experimentation (look below) etc.
+
+* Eventually, your goal is to make the forward + backward process into one kernel as much as possible. 
+    * In fact, research at stanford does this for the forward pass of LLM. [Link](https://hazyresearch.stanford.edu/blog/2025-05-27-no-bubbles)
+        * take a look at ThunderMLA by Stanford's Hazy Research as well
+    * Triton does this as well. Research more into that
+        * Memory coalescing, etc.
+        * BACKEND TO TRITON vs. BACKEND TO NVIDIA PTX
+            * weigh pros and cons of each
+    * Really, take a look into profiling here too
+        * reason why multiple kernels on enqueue are slow is because they require synchronization
+            * we want to decrease the amount of synchronization as much as possible
+    
+* Tensor/multi-gpu sharding
+
+* New attention mechanism?
 
 * Chip project
     * Study the computations needed around popular algos
@@ -85,23 +84,39 @@
         * across-layer sharding --> side-by-side approach
             * ex: splitting heads
 
+## Extra TODO
+* better linearizer?
+    * when combining after the final linearizer, there comes a point where any combinations between layer one and layer two are acceptable 
+    * See that instead of going in order -- if there's some sort quantative metric you can develop
+    * **EXTRA** make sure that toposort res is "in place aware" in "flatten_toposort" function
+        * ex: `[{0, 1, 2, 3}, {99, 4}, {100}]`
+        * {99, 4}. 4 should go first as it directly depends on 0, 1, 2, 3. Furthermore, 99 is redefineing 0, 1, 2, 3
+        * Toposort doesn't know this yet
+
+* **EXTRA**: index available at "for" node 
+    * store copies at CPU + device.
+    * must have if statement done (more control)
+
+* **EXTRA**: Divergent branching conflicts
+    * if different, push the computation match/if statement itself
+
+* **EXTRA:**: experiment more with **read async callback?** in OpenCL
+
 ## Extra Links:
 
 **Better kernel fusion**:
 * look into optimized [link](https://siboehm.com/articles/22/CUDA-MMM)
 * even better optimization for [kernels](https://salykova.github.io/sgemm-gpu)
+
 * technically, there's even more [kernels at llm.c](https://github.com/karpathy/llm.c/tree/master/dev/cuda)
 * more kernel opt (+ read kernel fusion) [here](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html)
+
 * transpose operator faster: [here](https://veitner.bearblog.dev/making-matrix-transpose-really-fast-on-hopper-gpus/)
     * prolly uses this: [here](https://veitner.bearblog.dev/tma-introduction/)
-* even faster kernel stuff for generation: [here](https://www.together.ai/blog/chipmunk)
     * The entire purpose of **TogetherAI** is optimizing kernels in a way.
+
 * There are more and more special features of hardware on more and more GPUs:
     * [link](https://tridao.me/blog/2024/flash3/)
-
-**Kernel experimentation**
-
-* [this](https://mesozoic-egg.github.io/tinygrad-notes/20241203_beam.html) does a good job
 
 ## Experiments
     

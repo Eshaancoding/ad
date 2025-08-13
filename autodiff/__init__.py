@@ -1,12 +1,12 @@
 from autodiff import device
 from autodiff.fusion.base import FuseBase
-from autodiff.graph.data.feeder import Feeder
+from autodiff.linearize_two import linearize_two
 from autodiff.opt import dep_opt, mem_opt, repeat_opt
 from autodiff.opt.simplify import simpl_node
 from .context import context
 from math import prod
 from typing import Callable
-from .graph import Tensor, ConcatNode, Node
+from .graph import Tensor, ConcatNode, Node, Receiver, Feeder
 from typing import List
 from .helper import benchmark
 from time import time
@@ -39,12 +39,13 @@ def execute ():
     from .linearize import linearize
     from .alloc import alloc
     from .device.opencl import OpenCLDevice, CLDevice
-    from .opt import mem_opt
+    from .opt import mem_opt, set_in_place
 
     # lock procedure
     context.lock_proc = True
 
     # perform optimizations 
+
     benchmark(lambda: dep_opt(context), "dep_opt")    # delete nodes that are not needed or computed
     benchmark(lambda: simpl_node(context), "simplify node") # apply graph-level optimizations (ex: constant simplification)
     benchmark(lambda: repeat_opt(context), "repeat_opt") # re-use nodes already computed
@@ -54,17 +55,26 @@ def execute ():
     benchmark(lambda: kernalize(context), "kernalize")
 
     # Linearize + fusion
-    proc = benchmark(lambda: linearize(context.main_proc()), "linearize")
+    #proc = benchmark(lambda: linearize(context.main_proc()), "linearize")
+
+    #print(proc)
+
+    pg()
+
+    _ = linearize_two(context.main_proc())
+
+    return
+
+    # set in place ops
+    proc = set_in_place(proc)
 
     # perform memory optimization
     proc = benchmark(lambda: mem_opt(proc), "mem opt")
-
+    
     # apply linear optimizations (dep opt, mem opt, as well as some memory accessing regrouping if needed)
     # see if you can make fusion better here as well (test)
     # Apply allocations + opts on allocs
     alloc(proc)
-
-    print(proc)
 
     # assign program id for each node that is about to be executed
     def assign_program_id (n: Node, _):
@@ -97,12 +107,3 @@ def pg ():
     Note that print graph will show concat node, even though it's folded at kernalize.
     """
     context.print_graph()
-
-def set_lenient_dep ():
-    """
-    lenient_dep will add gradients to dependencies.
-    If set to False, even if you call .backward(),
-    it won't calculate any gradients unless it is explicitly used in another computation.
-    (ex: performing gradient update with the original tensor)
-    """
-    context.lenient_dep = True

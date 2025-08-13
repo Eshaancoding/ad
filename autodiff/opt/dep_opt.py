@@ -1,27 +1,33 @@
 from autodiff.context import Context
 from autodiff.fusion.helper import get_res
+from autodiff.graph.compute.binary import BinaryNode
+from autodiff.graph.data.receiver import Receiver
+from autodiff.graph.tensor import Tensor
 from autodiff.node import Node
 from autodiff.helper import walk_graph
 
 def dep_opt (context: Context):
     
-    assert len(context.deps) > 0, "Empty dependency list"
-
     # iterate over the procedure and only keep the nodes in dep list
     # note using walk graph 
     def filter_node (node: Node, _): 
+        # keep control nodes
         if not isinstance(node, Node) or node.get_block() is not None:
             return node
 
-        r = get_res(node)
-        if len(r) != 1:
+        # leave receiver nodes alone
+        if isinstance(node, Receiver): 
             return node
-        r = list(r)[0]
-        
-        if r not in context.deps:
-            return None
-        else:
+    
+        # leave binary ops (+=, -=, etc.) alone
+        if isinstance(node, BinaryNode) and node.in_place: 
             return node
+
+        # leave tensor declarations alone 
+        if isinstance(node, Tensor):
+            return node
+
+        return None
 
     context.procedure[0] = walk_graph(
         context.procedure[0], 

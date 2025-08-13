@@ -1,3 +1,4 @@
+from autodiff.graph.data.receiver import Receiver
 from .node import Node
 from toposort import toposort
 from typing import Dict, List
@@ -5,6 +6,7 @@ from .helper import walk_graph
 from .fusion import *
 from .graph import ConcatNode, ConstantNode
 from .context import Block, Proc
+from pprint import pprint
 
 def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
     g_dep = {}
@@ -28,6 +30,8 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
     walk_graph(proc.nodes, fill_id_to_node, walk_block=False)
 
     # Fill deps (g_dep)
+    alr_decl_block = {}
+    
     def fill_deps (n: Node, visited: Dict[int, int] = {}):
         n_id = n.id
         visited[n.id] = 1
@@ -36,9 +40,23 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
         # control opts are defined seperately (ex: taking expressions out of for)
         if n.get_block() is not None:
             g_dep[n_id] = list(g_dep.keys())
+            
+            # set alr_decl_block
+            res = get_res(n, True) 
+            for r in res:
+                alr_decl_block[r] = n_id
+
             return n
 
         ids_dep = n.kargs_child_ids()
+    
+        # check whether ids dep is already declared by prev block
+        for idx in range(len(ids_dep)):
+            id = ids_dep[idx]
+            ids_dep[idx] = alr_decl_block[id] if id in alr_decl_block else id
+        ids_dep = list(set(ids_dep))
+
+        # add to g dep
         if n_id not in g_dep:
             g_dep[n_id] = ids_dep
         else:
@@ -53,7 +71,7 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
 
     for n in proc.nodes:
         fill_deps(n)
-        
+
     # filter g dep
     for n_id in g_dep:
         g_dep[n_id] = list(filter(lambda item: item not in already_decl, g_dep[n_id]))
@@ -97,5 +115,5 @@ def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
             toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.ACROSS_LAYER) 
         else:
             toposort_res = fn_fuse(toposort_res, id_to_node, op, op().type)
-    
+
     return Proc(flatten_toposort(toposort_res, id_to_node, already_decl))

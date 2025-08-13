@@ -1,13 +1,14 @@
 from copy import deepcopy
 import math
 from typing import List, Optional
+
 from .kernalize import NoneKernelArg, KernelArg
 
 class Node:
     ############################################################
     ## Derived methods/init
     # TODO: Add res expr and shape to super().__init__()
-    def __init__(self, children, shape:List[int], id_override:Optional[int] = None):
+    def __init__(self, children, shape:List[int], id_override:Optional[int] = None, is_receiver=False):
         from autodiff import context
 
         self.id = context.get_id() if id_override is None else id_override
@@ -25,6 +26,7 @@ class Node:
 
             # fill in children datacmds. This is an internal variable needed at kernalize
             self.children_datacmds.append([])
+
             # fill in kargs. Filled in at kernalize (uses children_datacmds)
             self.kargs.append(NoneKernelArg())
 
@@ -39,15 +41,15 @@ class Node:
 
         # set the self.left, self.right, or self.child at children
         # It's easier to seperate them like this rather than having one single list[Node]
-        if len(children) == 1:
+        if is_receiver:
+            self.rec_children = children # only in the case of receiver node  
+        elif len(children) == 1:
             self.child: Node = children[0]
         elif len(children) == 2:
             self.left: Node = children[0]
             self.right: Node = children[1]
         elif len(children) != 0:
             raise TypeError("Children length is invalid (expected one or two)")
-        #else:
-            #self.rec_children = children # only in the case of receiver node  
 
         self.shape = list(shape) # set shape
         
@@ -98,8 +100,12 @@ class Node:
         return node 
     
     # helper to get children 
+    # note that if this function is changed, make sure that the helper function walk_node is changed accordingly
     def children (self):
-        if hasattr(self, "left") and hasattr(self, "right"):
+        from autodiff.graph import Receiver
+        if isinstance(self, Receiver):
+            return self.rec_children
+        elif hasattr(self, "left") and hasattr(self, "right"):
             return [self.left, self.right]
         elif hasattr(self, "child"):
             return [self.child]

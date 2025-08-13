@@ -6,3 +6,4 @@ from .index import *
 from .permute import *
 from .view import *
 from .feeder import *
+from .receiver import *

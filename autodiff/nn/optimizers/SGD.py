@@ -7,13 +7,12 @@ class SGD:
         self.lr = lr
     
     def step (self):
-        for p in self.parameters:
-            if isinstance(p, Tensor):
-                # this doesn't apply to it sadly; I have to figure something out in that case
-                p -= self.lr * p.grad()
+        for idx in range(len(self.parameters)):
+            if isinstance(self.parameters[idx], Tensor):
+                self.parameters[idx] -= self.lr * self.parameters[idx].grad()
 
     def zero_grad (self):
-        for p in self.parameters:
-            if isinstance(p, Tensor):
-                p.grad_tensor = None
+        for idx in range(len(self.parameters)):
+            if isinstance(self.parameters[idx], Tensor):
+                self.parameters[idx].grad_tensor = None
             

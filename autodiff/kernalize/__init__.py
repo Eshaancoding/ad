@@ -1,6 +1,7 @@
 from typing import Callable, List, Optional
 from ..expr import *
 from colored import stylize, fore
+from math import prod
 
 class KernelArg:
     def __init__(self):
@@ -22,6 +23,9 @@ class KernelArg:
     def change_to_temp (self, search:int):
         raise NotImplementedError("change_to_temp not impl for KernelArg")
 
+    def calc_offset (self):
+        raise NotImplementedError("calc_offset not available to kernel arg")
+
 class NoneKernelArg (KernelArg):
     def __init__(self):
         super().__init__()
@@ -41,6 +45,7 @@ class KMatrix (KernelArg):
         self.access = access
         self.shape = shape
         self.is_temp = False
+        self.offset = None # only filled out at calc_offset
 
     def __repr__ (self):
         if self.is_temp:
@@ -64,6 +69,17 @@ class KMatrix (KernelArg):
     def change_to_temp(self, search):
         if self.id == search:
             self.is_temp = True
+
+    def calc_offset (self):
+        match self.access:
+            case Global():
+                self.offset = 0
+            case Add(Global(), Val(Constant(_ as c))):
+                self.offset = c
+            case Val(Constant(c)) if prod(self.shape) == 1:
+                self.offset = c 
+            case _:
+                raise Exception(f"Invalid Feeder setting: {self.access}. Make sure to call .contigious before Global() ")
 
 class KConcat (KernelArg):
     def __init__(self, karg_one: KernelArg, karg_two: KernelArg, condition: Expression, shape: List[int]):

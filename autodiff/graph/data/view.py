@@ -6,7 +6,6 @@ class ViewNode (Node):
     __match_args__ = ("child", "shape") 
     def __init__(self, child:Node, shape: list[int]):
         assert math.prod(child.shape) == math.prod(shape), "View dimensions are incorrect"
-        
         super().__init__([child], shape)
         
     def handle_minus_dim(source_dim: List[int], input_dim: List[int]) -> List[int]:

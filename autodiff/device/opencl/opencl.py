@@ -1298,7 +1298,7 @@ try:
     clEnqueueCopyBufferToImage.restype = cl_int
     clEnqueueCopyBufferToImage.argtypes = [cl_command_queue, cl_mem, cl_mem, size_t, ctypes.POINTER(ctypes.c_uint64), ctypes.POINTER(ctypes.c_uint64), cl_uint, ctypes.POINTER(ctypes.POINTER(struct__cl_event)), ctypes.POINTER(ctypes.POINTER(struct__cl_event))]
 except AttributeError:
-    pass
+   pass
 try:
     clEnqueueMapBuffer = _libraries['libOpenCL.so.1'].clEnqueueMapBuffer
     clEnqueueMapBuffer.restype = ctypes.POINTER(None)
