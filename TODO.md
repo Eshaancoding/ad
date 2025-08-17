@@ -2,15 +2,12 @@
 
 ## Main Todo
 
-* Better fusion?
-    * Fusion is pretty weird, not going to lie. 
-        * toposort gaur at the last step - converting to procedure
-        * many to one / one to many resolve  
-    * attempt to make it as EASY AS POSSBILE to implement operator fusion
-    * could be better improved...
+* ~~Better simplification of nodes~~
+    * ~~constant simplificaton, etc.~~
 
-* Better simplification of nodes
-    * constant simplificaton, etc.
+* ~~better repeat opt~~
+
+* make sure it works against non-power-of-2 things
 
 * Numerical tests 
     * different opts + neural networks, etc.

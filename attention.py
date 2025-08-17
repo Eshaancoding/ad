@@ -1,32 +1,13 @@
-from copy import deepcopy
-import pprint
-from autodiff import Tensor, execute, ir_for, context, Feeder, Receiver, pg
-from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder, SGD 
+from autodiff import execute, ir_for, Feeder, Receiver, pg
+from autodiff.nn import SGD 
 from autodiff.nn.transformer import * 
 from autodiff.helper import benchmark
 import numpy as np
 
-if False:
-    """
-    nn = MultiHeadAttention(
-        d_model=512,
-        num_heads=4
-    )
-    """
-
-    nn = TransformerEncoder(
-        num_layers=1, # past 1 layer and it breaks pretty much; be careful of 100% core CPU util
-        d_model=512,
-        num_heads=4,
-        ff_dim=128
-    )
-else:
-    nn = Sequential(
-        Linear(512, 256),
-        Sigmoid(),
-        Linear(256, 128),
-    )
-
+nn = MultiHeadAttention(
+    d_model=512,
+    num_heads=4
+)
 idx = 0
 def get_inp ():
     global idx
@@ -48,11 +29,10 @@ opt = SGD(nn.parameters(), lr=0.01)
 def f():
     opt.zero_grad()
     val = Feeder(get_inp, shape=[2,512], name="Get input")
-    #res = nn(val, val, val)
-    res = nn(val)
+    res = nn(val, val, val)
 
-    res.backward() 
-    opt.step()
+    #res.backward() 
+    #opt.step()
 
     Receiver(print_inp, [res], name="Printing res")
 

@@ -55,21 +55,17 @@ def execute ():
     benchmark(lambda: kernalize(context), "kernalize")
 
     # Linearize + fusion
-    #proc = benchmark(lambda: linearize(context.main_proc()), "linearize")
-
-    #print(proc)
-
-    pg()
-
-    _ = linearize_two(context.main_proc())
-
-    return
+    proc = linearize_two(context.main_proc())
 
     # set in place ops
     proc = set_in_place(proc)
 
+    print(proc)
+    return
+
     # perform memory optimization
     proc = benchmark(lambda: mem_opt(proc), "mem opt")
+    
     
     # apply linear optimizations (dep opt, mem opt, as well as some memory accessing regrouping if needed)
     # see if you can make fusion better here as well (test)
@@ -93,12 +89,14 @@ def execute ():
 ## Control flow 
 def ir_for (r: range, f: Callable):
     from .graph import ForNode
+
     context.add_proc() 
     f()
     proc = context.pop_proc()
     
     # Initialize for loop. This will automatically be added within the context
     ForNode(proc, r) 
+
 
 ##########################################
 ## Misc

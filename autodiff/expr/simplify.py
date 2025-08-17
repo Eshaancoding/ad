@@ -3,12 +3,13 @@ from copy import deepcopy
 import math
 from typing import Optional
 
-# level 1 simplifications
 def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
     if isinstance(expr, Value) or isinstance(expr, Val):
         return expr
 
     match expr:
+        ############### Constant Simplification
+
         ############### Ones
         # _ / 1 --> _
         case Div(_ as node, Val(Constant(1))):

@@ -16,6 +16,7 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
 
     match node:
         ############ Constant simplification ###############
+        # c1 * c2
         case BinaryNode(
             ConstantNode(_ as c1, _ as sh1),
             ConstantNode(_ as c2, _ as sh2),
@@ -24,8 +25,28 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
         ):
             assert sh1 == sh2, "shape not equal at simplify constant"
             is_new = True
-            ret = ConstantNode(c1 + c2 if op == BinaryOp.ADD else c1 * c2, shape=sh1)
-            return ret
+            return ConstantNode(c1 + c2 if op == BinaryOp.ADD else c1 * c2, shape=sh1)
+
+        # a * c1 * c2 = a * (c1 * c2)
+        case BinaryNode(
+            BinaryNode(
+                _ as a,
+                ConstantNode(_ as c1, _ as sh1),
+                BinaryOp.MULT,
+                False
+            ),
+            ConstantNode(_ as c2, _ as sh2),
+            BinaryOp.MULT,
+            False
+        ):
+            assert sh1 == sh2, "shape not equal at simplify constant"
+            is_new = True
+            return BinaryNode(
+                a,
+                ConstantNode(c1 * c2, shape=sh1),
+                BinaryOp.MULT,
+                False
+            )
 
         ############ n + 0.0 = n ###############
         case BinaryNode(
@@ -35,11 +56,7 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
             _
         ):
             is_new = True
-            if op == BinaryOp.ADD:
-                return n
-            elif op == BinaryOp.MULT:
-                r = ConstantNode(0.0, sh)
-                return r
+            return n if op == BinaryOp.ADD else ConstantNode(0.0, sh)
 
         case BinaryNode(
             ConstantNode(0.0, sh),
@@ -48,10 +65,7 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
             _
         ):
             is_new = True
-            if op == BinaryOp.ADD:
-                return n
-            elif op == BinaryOp.MULT:
-                return ConstantNode(0.0, sh)
+            return n if op == BinaryOp.ADD else ConstantNode(0.0, sh)
 
         ############ n * 1.0 = n ###############
         case BinaryNode(
@@ -135,4 +149,9 @@ def _inner_simpl (node: Node, visited: Dict[int, int], on_child=False):
 
 def simpl_node (context: Context):
     # internally, walk 
-    context.procedure[0] = walk_graph(context.procedure[0], _inner_simpl, walk_block=True, walk_child=False)
+    context.procedure[0] = walk_graph(
+        context.procedure[0], 
+        _inner_simpl, 
+        walk_block=True, 
+        walk_child=True
+    )

@@ -33,7 +33,8 @@ class Node:
             # as we are creating nodes, we record the latest node being changed within the context
             # as we go through the computation core, the order of the nodes being changed will also be recorded
             # and being recorded into a procedure
-            context.remove_from_dep(ch)
+            if not is_receiver:
+                context.remove_from_dep(ch)
         
         context.add_to_dep(self)
 

@@ -24,7 +24,7 @@ def lower_dp_elw_fuse (fused_cmd: DPElwFuse):
     return res        
 
 def init_dp_elw_fuse (dev: OpenCLDevice, cmd: DPElwFuse):
-    dpnode = cmd.get_dp()
+    dpnode = cmd.init_node
     name = f"dp_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
 

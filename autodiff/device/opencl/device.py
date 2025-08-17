@@ -28,7 +28,7 @@ class OpenCLDevice (Device):
 
             if sel == CLDevice.ALL or sel == device_type:
                 self.device = device
-                print("   ** SELECTED **")
+                print("   *** SELECTED ***")
                 break
 
         assert self.device is not None, "Device none!"

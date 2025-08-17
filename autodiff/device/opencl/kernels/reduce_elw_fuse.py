@@ -27,7 +27,7 @@ def lower_reduce_elw_fuse (fused_cmd: ReduceElwFuse):
 def init_reduce_elw_fuse (dev: OpenCLDevice, cmd: ReduceElwFuse):
     name = f"reduce_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
-    reduce_node = cmd.get_reduce()
+    reduce_node = cmd.init_node
     
     # construct program
     program_str = f"""

@@ -56,6 +56,9 @@ class Block ():
     def add_to_dep (self, node:Node):
         self.nodes.append(node)
 
+    def __len__ (self):
+        return len(self.nodes)
+
     def remove_from_dep (self, other: Node):
         idx = None
         for i, x in enumerate(self.nodes):
