@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Dict, List
 from autodiff.context import Block, Proc
 from autodiff.fusion.base import FuseBase, FuseResult
-from autodiff.fusion.helper import get_deps, get_res, print_toposort
+from autodiff.fusion.helper import get_deps, get_res, print_toposort, resolve_circular_deps
 from autodiff.fusion.ops import ElwFuse, DPElwFuse, ReduceElwFuse
 from autodiff.helper import walk_graph
 from autodiff.node import Node
@@ -13,7 +13,6 @@ from pprint import pprint
 global_deps = {}
 id_to_node = {}
 block_to_node = {}
-global_alr_defined = {}
 
 def insert_to_global_dep (block_id:int, key:int, value:int):
     global global_deps
@@ -29,10 +28,7 @@ def insert_to_global_dep (block_id:int, key:int, value:int):
         global_deps[block_id][key].add(value)
 
 def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
-    global block_to_node, global_alr_defined
-    
-    # record alr_defined
-    global_alr_defined[block.id] = set(alr_defined.keys())
+    global block_to_node
 
     defined = dict()
     vars_need_dep = dict()
@@ -72,7 +68,7 @@ def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
                             should_visit = False
                             vars_need_dep[dep] = alr_defined[dep]
                         
-                        # referencing ndoe already defined by upper-level blocks
+                        # referencing node already defined by upper-level blocks
                         # ex: Receiver of the latest weight changed by upper for loop 
                         if dep in defined:
                             if (block_id_defined := defined[dep]) != block.id:
@@ -97,12 +93,11 @@ def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
 
 def fuse (g_dep_id) -> Proc:
     ########### Run through toposort ########### 
-    global global_deps, global_alr_defined
+    global global_deps
     deps = global_deps[g_dep_id]
 
     # run through toposort
     toposort_res = list(toposort(deps))
-    #print_toposort(toposort_res, id_to_node)
 
     ########### Fusing Operation ###########
     ops = [
@@ -119,7 +114,10 @@ def fuse (g_dep_id) -> Proc:
             op_entry = op() 
             
             # Fusion process
+            did_start = False
             for layer in toposort_res:
+                did_sum = False
+
                 for node_idx in layer:
                     # assert not in init taken
                     if node_idx in init_taken:
@@ -127,24 +125,23 @@ def fuse (g_dep_id) -> Proc:
 
                     # attempt fuse
                     # alr defined doesn't matter
-                    op_entry.attempt_fuse(
-                        node=id_to_node[node_idx], 
-                        alr_defined=global_alr_defined[g_dep_id]
-                    )
+                    result = op_entry.attempt_fuse(id_to_node[node_idx])
+
+                    if result in (FuseResult.ADD, FuseResult.INIT):
+                        init_taken.add(node_idx)
+                        did_sum = True
+                        did_start = True
+
+                if did_start and not did_sum:
+                    break
 
             # Fuse more of the node or carry on to the next
             if len(op_entry.nodes) == 0: 
                 break # can't fuse no more
-            elif len(op_entry.nodes) == 1:
+            if len(op_entry.nodes) == 1:
                 init_taken.add(op_entry.nodes[0].id)
             elif len(op_entry.nodes) > 1:
                 entries.append(op_entry)
-
-                for node in op_entry.nodes:
-                    init_taken.add(node.id)
-
-    #if g_dep_id == 1:
-    #    exit(0)
 
     # insert the fuse entries + get node to remove
     nodes_to_remove = set()
@@ -193,6 +190,7 @@ def fuse (g_dep_id) -> Proc:
         for idx in layer: 
             node = id_to_node[idx]
             deps = get_deps(node, step_proc=True, replace=dep_to_fuse_id)
+
             id = node.id if isinstance(node, Node) else node.fuse_id
             g_dep[id] = deps
 
@@ -201,7 +199,6 @@ def fuse (g_dep_id) -> Proc:
         g_dep[id] = set(filter(lambda x: x in g_dep.keys(), g_dep[id]))
     
     # finally, toposort it
-    #pprint(g_dep)
     toposort_res = list(toposort(g_dep))
 
     ########### Linearize --> Return to proc ###########
@@ -222,7 +219,7 @@ def fuse (g_dep_id) -> Proc:
     return Proc(proc)
 
 def linearize_two (main_block: Block):
-    global global_deps, id_to_node, block_to_node, global_alr_defined
+    global global_deps, id_to_node, block_to_node
 
     ######## Insert all id to node ######## 
     id_to_node = {}
@@ -235,7 +232,6 @@ def linearize_two (main_block: Block):
     ######## Get deps ########
     global_deps = {}
     block_to_node = {}
-    global_alr_defined = {}
     _, d = get_deps_global(main_block)
     assert len(d) == 0, "vars need dep not None!"
 

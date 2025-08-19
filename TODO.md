@@ -2,11 +2,6 @@
 
 ## Main Todo
 
-* ~~Better simplification of nodes~~
-    * ~~constant simplificaton, etc.~~
-
-* ~~better repeat opt~~
-
 * make sure it works against non-power-of-2 things
 
 * Numerical tests 
@@ -45,11 +40,15 @@
         * more research needs to be done in that area
     * then, you can add dynamic slices with indexing, etc.
 
+---------------------- done before stanford? ----------------------
+
+* Compact the linearizer a lil better? + Elw --> Dotprod/Reduce
+    * might need to run computation **again** after toposort_res
+    * Other lineraizer methods --  
+
 * Indexing via a non constant node
     * can't do slices --> requires dynamic shapes
     * add pytest for this
-
----------------------- done before stanford? ----------------------
 
 * More frontend support (see below)
 
@@ -98,6 +97,11 @@
     * if different, push the computation match/if statement itself
 
 * **EXTRA:**: experiment more with **read async callback?** in OpenCL
+
+* **EXTRA:**: Better linearizer?
+    * other methods towards linearizer. Instead of one op at a time, you can have ops competing for the same result
+        * Might be able to fuse better?
+    * Think of other methods 
 
 ## Extra Links:
 

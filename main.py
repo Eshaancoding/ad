@@ -6,7 +6,7 @@ from autodiff.nn.transformer import *
 from autodiff.helper import benchmark
 import numpy as np
 
-if False:
+if True:
     """
     nn = MultiHeadAttention(
         d_model=512,
@@ -48,13 +48,12 @@ opt = SGD(nn.parameters(), lr=0.01)
 def f():
     opt.zero_grad()
     val = Feeder(get_inp, shape=[2,512], name="Get input")
-    #res = nn(val, val, val)
     res = nn(val)
 
     res.backward() 
     opt.step()
 
-    Receiver(print_inp, [res], name="Printing res")
+    #Receiver(print_inp, [res], name="Printing res")
 
 # In future release pass the idx
 benchmark(lambda: ir_for(range(0, 100), f), name="Tracking nodes")
@@ -62,3 +61,5 @@ benchmark(lambda: ir_for(range(0, 100), f), name="Tracking nodes")
 #Receiver(save_params, opt.parameters, name="saving params")
 
 benchmark(lambda: execute(), name="full exec")
+
+

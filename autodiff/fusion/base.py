@@ -50,7 +50,7 @@ class FuseBase ():
         raise NotImplementedError("Need to implement _init(); true or false on whether ") 
         
     # use these function at merge
-    def attempt_fuse (self, node, alr_defined: Set[int]={}) -> FuseResult:
+    def attempt_fuse (self, node) -> FuseResult:
         # if we are at 0 nodes
         if len(self.nodes) == 0 and self._init(node):
             self.init_node = node
