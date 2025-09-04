@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Dict, List
 from autodiff.context import Block, Proc
 from autodiff.fusion.base import FuseBase, FuseResult
-from autodiff.fusion.helper import get_deps, get_res, print_toposort, resolve_circular_deps
+from autodiff.fusion.helper import get_deps, get_res, get_walking_path, print_toposort
 from autodiff.fusion.ops import ElwFuse, DPElwFuse, ReduceElwFuse
 from autodiff.helper import walk_graph
 from autodiff.node import Node
@@ -13,6 +13,7 @@ from pprint import pprint
 global_deps = {}
 id_to_node = {}
 block_to_node = {}
+alr_defined_global = {}
 
 def insert_to_global_dep (block_id:int, key:int, value:int):
     global global_deps
@@ -28,11 +29,15 @@ def insert_to_global_dep (block_id:int, key:int, value:int):
         global_deps[block_id][key].add(value)
 
 def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
-    global block_to_node
+    global block_to_node, alr_defined_global
+   
+    # track alr defined 
+    if block.id not in alr_defined_global:
+        alr_defined_global[block.id] = list(alr_defined.keys())
 
     defined = dict()
     vars_need_dep = dict()
-
+    
     for n in block.nodes:
         # step through the block
         if (inner_bl := n.get_block()):
@@ -49,8 +54,11 @@ def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
             block_to_node[inner_bl.id] = n.id
         else:
             # if regular node, go through the ids
-            def update_node (n:Node):
+            visited = set()
+            def update_node (n:Node, visited):
                 # skip if node if already defined
+                if n.id in visited:
+                    return n
                 if n.id in alr_defined:
                     return n
 
@@ -80,24 +88,28 @@ def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
 
                         # visit
                         if should_visit:
-                            update_node(id_to_node[dep])
+                            visited.add(n.id)
+                            update_node(id_to_node[dep], visited)
 
                     # add to defined if not inserted already 
                     if n.id not in defined:
                         defined[n.id] = block.id
                 return n
             
-            update_node(n)
+            update_node(n, visited)
 
     return defined, vars_need_dep
 
 def fuse (g_dep_id) -> Proc:
     ########### Run through toposort ########### 
-    global global_deps
+    global global_deps, alr_defined_global
     deps = global_deps[g_dep_id]
 
     # run through toposort
     toposort_res = list(toposort(deps))
+    #print_toposort(toposort_res, id_to_node)
+    #if g_dep_id == 1:
+    #    exit(0)
 
     ########### Fusing Operation ###########
     ops = [
@@ -111,19 +123,30 @@ def fuse (g_dep_id) -> Proc:
 
     for op in ops:
         while True:
-            op_entry = op() 
+            op_entry: FuseBase = op() 
+            white_list_nodes = set()
             
             # Fusion process
             did_start = False
-            for layer in toposort_res:
+            for layer_idx, layer in enumerate(toposort_res):
                 did_sum = False
 
                 for node_idx in layer:
-                    # assert not in init taken
+                    deps_id = get_deps(id_to_node[node_idx])
+
                     if node_idx in init_taken:
+                        # add to white listing if nodes intersect 
+                        if len(deps_id.intersection(op_entry.result_tracker)) > 0:
+                            white_list_nodes.update(get_walking_path(
+                                node=id_to_node[node_idx],
+                                toposort_res=toposort_res[layer_idx+1:],
+                                id_to_node=id_to_node
+                            ))
+                        continue # then skip 
+                    if node_idx in white_list_nodes:
                         continue
 
-                    # attempt fuse
+                    # attempt fuseMulti
                     # alr defined doesn't matter
                     result = op_entry.attempt_fuse(id_to_node[node_idx])
 
@@ -131,6 +154,13 @@ def fuse (g_dep_id) -> Proc:
                         init_taken.add(node_idx)
                         did_sum = True
                         did_start = True
+                    elif len(deps_id.intersection(op_entry.result_tracker)) > 0:
+                        # add to whitelisting
+                        white_list_nodes.update(get_walking_path(
+                            node=id_to_node[node_idx],
+                            toposort_res=toposort_res[layer_idx+1:],
+                            id_to_node=id_to_node
+                        ))
 
                 if did_start and not did_sum:
                     break
@@ -183,14 +213,21 @@ def fuse (g_dep_id) -> Proc:
             if isinstance(node, FuseBase):
                 result = get_res(node)
                 dep_to_fuse_id.update({r: node.fuse_id for r in result})
-        
+
     ########### Rerun toposort ###########
     g_dep = {} 
     for layer in toposort_res:
         for idx in layer: 
             node = id_to_node[idx]
-            deps = get_deps(node, step_proc=True, replace=dep_to_fuse_id)
+            deps = get_deps(node, step_proc=True)
 
+            # replace by dep to fuse id
+            deps = set({
+                (dep_to_fuse_id[d] if d in dep_to_fuse_id else d)
+                for d in deps
+            })
+            
+            # then get g_deps
             id = node.id if isinstance(node, Node) else node.fuse_id
             g_dep[id] = deps
 
@@ -203,15 +240,9 @@ def fuse (g_dep_id) -> Proc:
 
     ########### Linearize --> Return to proc ###########
     proc = []
-    dep_to_fuse_id = dict() # replace dependency with their fuse id
     for layer in toposort_res:
         for node_id in layer:
             node = id_to_node[node_id]
-
-            # dep to fuse id
-            if isinstance(node, FuseBase):
-                result = get_res(node)
-                dep_to_fuse_id.update({r: node.fuse_id for r in result})
 
             # else, return to proc
             proc.append(node)
@@ -219,7 +250,7 @@ def fuse (g_dep_id) -> Proc:
     return Proc(proc)
 
 def linearize_two (main_block: Block):
-    global global_deps, id_to_node, block_to_node
+    global global_deps, id_to_node, block_to_node, alr_defined_global
 
     ######## Insert all id to node ######## 
     id_to_node = {}
@@ -232,6 +263,7 @@ def linearize_two (main_block: Block):
     ######## Get deps ########
     global_deps = {}
     block_to_node = {}
+    alr_defined_global = {}
     _, d = get_deps_global(main_block)
     assert len(d) == 0, "vars need dep not None!"
 

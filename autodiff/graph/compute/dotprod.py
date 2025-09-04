@@ -1,6 +1,7 @@
 from ...node import Node
 from colored import stylize, fore, style
-
+import functools
+    
 class DotProdNode (Node):
     __match_args__ = ("left", "right")
     def __init__(self, left:Node, right:Node):
@@ -14,25 +15,23 @@ class DotProdNode (Node):
         
         super().__init__([left, right], shape=[left.shape[0], right.shape[1]])
         
-    def bck (self, grad:Node):
-        self.left.bck(grad @ self.right.T())
-        self.right.bck(self.left.T() @ grad)
+    def _bck (self, grad:Node):
+        return grad @ self.right.T(), self.left.T() @ grad
         
     def __repr__ (self):
         l_shape = self.children_shapes[0]
         r_shape = self.children_shapes[1]
 
+        op_str = stylize("Dot Prod", fore("turquoise_2"))
         size_str = f"{stylize(l_shape, fore("yellow") + style("bold"))} x {stylize(r_shape, fore("yellow") + style("bold"))}"
         
         if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
-            return f"{self.id} = Dot prod {size_str} --> ({self.left.id}, {self.right.id})"
+            return f"{self.id} = {op_str} {size_str} --> ({self.left.id}, {self.right.id})"
         else:
-            return f"{self.kres} = Dot prod {size_str} --> ({self.kargs[0]}, {self.kargs[1]})"
-
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, DotProdNode):
-            return False
-
-        return \
-            self.left.node_eq(other.left) and \
-            self.right.node_eq(other.right)
+            return f"{self.kres} = {op_str} {size_str} --> ({self.kargs[0]}, {self.kargs[1]})"
+    
+    def repeat_helper (self, is_child):
+        if is_child:
+            return (self.id,)
+        else:
+            return ("DotProd",)

@@ -6,10 +6,13 @@
 
 * Numerical tests 
     * different opts + neural networks, etc.
+    * Make sure you can do divergent branching correctly
     * To fix errors:
         * etc. etc. etc. Make sure you do it accordingly
 
 ----- performance testing? save to drive  -----
+
+* Memory grouping: like mem should be grouped together accordingly
 
 * **MAJOR** add more control
     * match (selection w/ different expressons)
@@ -40,8 +43,6 @@
         * more research needs to be done in that area
     * then, you can add dynamic slices with indexing, etc.
 
----------------------- done before stanford? ----------------------
-
 * Compact the linearizer a lil better? + Elw --> Dotprod/Reduce
     * might need to run computation **again** after toposort_res
     * Other lineraizer methods --  
@@ -51,6 +52,8 @@
     * add pytest for this
 
 * More frontend support (see below)
+
+--------- Get to this stage as quickly as possible ----------
 
 * Add CUDA support + advanced dotprod (probably need an external device lowk)
     * this is where you are going more into the backend kernel space
@@ -66,6 +69,9 @@
     * Really, take a look into profiling here too
         * reason why multiple kernels on enqueue are slow is because they require synchronization
             * we want to decrease the amount of synchronization as much as possible
+
+* ternary statements?
+    * could be even more advanced like: x>0 ? g(x) : f(x) where g(x) and f(x) could be full neural network functions
     
 * Tensor/multi-gpu sharding
 
@@ -81,14 +87,6 @@
             * ex: splitting heads
 
 ## Extra TODO
-* better linearizer?
-    * when combining after the final linearizer, there comes a point where any combinations between layer one and layer two are acceptable 
-    * See that instead of going in order -- if there's some sort quantative metric you can develop
-    * **EXTRA** make sure that toposort res is "in place aware" in "flatten_toposort" function
-        * ex: `[{0, 1, 2, 3}, {99, 4}, {100}]`
-        * {99, 4}. 4 should go first as it directly depends on 0, 1, 2, 3. Furthermore, 99 is redefineing 0, 1, 2, 3
-        * Toposort doesn't know this yet
-
 * **EXTRA**: index available at "for" node 
     * store copies at CPU + device.
     * must have if statement done (more control)

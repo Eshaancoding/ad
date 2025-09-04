@@ -30,19 +30,18 @@ class ViewNode (Node):
 
         return list(input_dim)
         
-    def bck(self, grad: Node):
+    def _bck(self, grad: Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not node!")
         
-        self.child.bck(grad.view(self.children_shapes[0]))
+        return grad.view(self.children_shapes[0])
 
     def __repr__ (self):
         return f"{self.id} = View from {self.children_shapes[0]} to {self.shape} --> ({self.child.id})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, ViewNode):
-            return False
-
-        return \
-            self.shape == other.shape and \
-            self.child.node_eq(other.child)
+    def repeat_helper (self, is_child):
+        return (
+            "View",
+            tuple(self.shape),
+            self.child.repeat_helper(True) if is_child else ()
+        )

@@ -15,7 +15,7 @@ class KernelArg:
     
     def get_ids (self, filter_temp=False) -> List[int]:
         raise NotImplementedError("Kernel arg get_ids not implemented")
-    
+
     # helper functions across the opt (after linearize) that changes kernel arg
     def rename (self, fr, to, change_access: Optional[Callable[[Expression], Expression]] = None):
         raise NotImplementedError("rename not impl for base class")
@@ -52,7 +52,7 @@ class KMatrix (KernelArg):
             t = stylize("Temp", fore("cyan"))
             return f"{t} {self.id}"
         else:
-            return f"Mat (id: {self.id}, access: {self.access})"
+            return f"Mat ({stylize(f"id: {self.id}", fore("blue"))}, {self.access})"
     
     def get_ids (self, filter_temp=False):
         if filter_temp and self.is_temp:
@@ -112,9 +112,9 @@ class KConstant (KernelArg):
     def __init__(self, constant:float):
         super().__init__()
         self.constant = constant
-        
+
     def __repr__ (self):
-        return f"C (val: {self.constant})"
+        return stylize(f"{self.constant}", fore("cadet_blue_2"))
 
     def get_ids (self, filter_temp=False):
         return []

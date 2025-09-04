@@ -2,6 +2,7 @@ from ...node import Node
 import math
 from enum import Enum
 from colored import stylize, fore, style
+import functools
 
 class BinaryOp (Enum):
     ADD=1
@@ -16,31 +17,30 @@ class BinaryNode (Node):
         self.op = op
         self.in_place = in_place
     
-    def bck (self, grad:Node):
+    def _bck (self, grad:Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not a node!")
         
         if self.op == BinaryOp.ADD:
-            self.left.bck(grad)
-            self.right.bck(grad)
+            return grad, grad
         elif self.op == BinaryOp.MULT:
-            self.left.bck(grad * self.right)
-            self.right.bck(grad * self.left)
+            return grad * self.right, grad * self.right
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
-            return f"{self.id} = {self.op} {"IN PLACE " if self.in_place else ""}({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.left.id}, {self.right.id})"
-        else:
-            return f"{self.kres} = {self.op} {"IN PLACE " if self.in_place else ""}({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.kargs[0]}, {self.kargs[1]})"
-    
-    def node_eq (self, other:Node) -> bool:
-        if not isinstance(other, BinaryNode):
-            return False
+        op_str = stylize(f"{self.op.name}{" IN PLACE" if self.in_place else ""}", fore("medium_turquoise"))
         
-        return \
-            self.op == other.op and \
-            self.in_place == other.in_place and \
-            self.left.node_eq(other.left) and \
-            self.right.node_eq(other.right)
-            
+        if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
+            return f"{self.id} = {op_str} ({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.left.id}, {self.right.id})"
+        else:
+            return f"{self.kres} = {op_str} ({stylize(str(total), fore("yellow") + style("bold"))}) --> ({self.kargs[0]}, {self.kargs[1]})"
+    
+    def repeat_helper(self, is_child):
+        if is_child:
+            return (self.id,)
+        else:
+            return (
+                "Binary",
+                self.op.value,
+                self.in_place
+            )

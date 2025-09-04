@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Dict, Tuple
 from .node import Node
 from colored import Fore, Style
 from .print_graph import pg
@@ -48,26 +48,32 @@ class Proc ():
 
 class Block ():
     def __init__(self, id_override=None):
-        self.nodes: List[Node] = []
+        self.nodes: Dict[int, Tuple[Node, int]] = dict()
+        self.position = 0
 
         # "hacky way" of getting over the context initialization issue
         self.id = id_override if id_override is not None else context.get_block_id()
 
     def add_to_dep (self, node:Node):
-        self.nodes.append(node)
+        self.nodes[node.id] = (node, self.position)
+        self.position += 1 
 
     def __len__ (self):
         return len(self.nodes)
 
     def remove_from_dep (self, other: Node):
-        idx = None
-        for i, x in enumerate(self.nodes):
-            if x.id_eq(other):
-                idx = i
-                break
-        
-        if idx is not None:
-            del self.nodes[idx]
+        if other.id in self.nodes:
+            del self.nodes[other.id] 
+
+    def convert_to_nodes (self):
+        if isinstance(self.nodes, List): # if already converted, don't do anything
+            return 
+
+        sorted_nodes = sorted(self.nodes.values(), key=lambda kv: kv[1]) # first sort by position
+        n = []
+        for kv in sorted_nodes:
+            n.append(kv[0]) # just get the node for list
+        self.nodes = n
             
     def __repr__(self):
         st = ""
@@ -88,10 +94,12 @@ class Context ():
         self.proc_id = -1
         self.block_id = 0
         self.program_id = -1
+        self.grads_seen = dict()
+        self.connections = dict()
+        self.conn_seen = set()
 
         self.procedure = [Block(0)] # first procedure is the main block
         self.lock_proc = False
-        self.temp_to_expr = {}
 
     # Note dependency tracking as it goes through forward and backward 
     def add_to_dep (self, node:Node):
@@ -107,10 +115,17 @@ class Context ():
         
     def pop_proc (self):
         assert len(self.procedure) > 1, "Attempt to pop main procedure!"
-        return self.procedure.pop(-1)
+        ret = self.procedure.pop(-1)
+        ret.convert_to_nodes()
+        return ret
         
     def print_graph (self):
         self.procedure[0].print_graph()
+
+    # prepares context to execution 
+    def prep_exec (self):
+        self.lock_proc = True
+        self.procedure[0].convert_to_nodes()
        
     # node id tracking
     def get_id (self):
@@ -128,7 +143,8 @@ class Context ():
     def get_prog_id (self):
         self.program_id += 1
         return self.program_id
-    
+
+    # alternatives
     def __repr__(self):
         return self.procedure[0].__repr__()
     

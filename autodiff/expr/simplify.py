@@ -152,7 +152,7 @@ def simplify_expr (expr: Expression, size: Optional[int]):
     # return expr
     start = expr
     while True:
-        end = simpl_expr_inner(deepcopy(start), size)
+        end = simpl_expr_inner(start, size)
         
         if end == start: 
             break

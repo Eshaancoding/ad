@@ -13,6 +13,7 @@ class OpenCLDevice (Device):
         platforms = get_platforms()
         assert len(platforms) > 0, "No platforms available!"
 
+        
         # get devices
         devices = get_devices(platforms[0])
         

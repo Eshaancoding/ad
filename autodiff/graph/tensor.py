@@ -10,20 +10,24 @@ import numpy as np
 
 class Tensor (Node):
     __match_args__ = ("arr")
-    def __init__ (self, arr: np.array):
+    def __init__ (self, arr: np.array, requires_grad:bool=False):
         super().__init__([], list(arr.shape))
 
         self.arr = arr.astype(np.float32) # ensure float32 (might make a copy)
         self.grad_tensor = None
+        self.requires_grad = requires_grad
 
-    def bck (self, grad):
+    def _bck (self, grad):
         if not isinstance(grad, Node):
             raise TypeError("Backward on tensor grad is not tensoor")
             
-        if self.grad_tensor is None:
-            self.grad_tensor = grad
-        else:
-            self.grad_tensor += grad 
+        if self.requires_grad: # never calculate gradient unnecessarily
+            if self.grad_tensor is None:
+                self.grad_tensor = grad
+            else:
+                self.grad_tensor += grad 
+
+        return None
             
     def grad (self):
         if self.grad_tensor is None:
@@ -31,13 +35,11 @@ class Tensor (Node):
 
         return self.grad_tensor
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, Tensor):
-            return False
-
-        # only case where I am not declaring same data and shape, and using id
-        # if the user declares the same shape and same data, then likely the user is using it for different purposes
-        return self.id == other.id 
+    def repeat_helper(self, is_child):
+        return (
+            "Tensor",
+            self.id
+        )
     
     def __repr__ (self) -> str:
         return f"Tensor(id: {self.id}, orig_shape: {self.shape})"

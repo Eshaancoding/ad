@@ -22,7 +22,7 @@ class UnaryNode (Node):
         
         self.op = op
         
-    def bck (self, grad:Node):
+    def _bck (self, grad:Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not a node!")
         
@@ -42,22 +42,19 @@ class UnaryNode (Node):
             UnaryOp.LESS_OR_EQ_ZERO: lambda _, _p: None,
         }
         
-        g = grad_dict[self.op](grad, self.child) # in the backward sense, "child" becomes the "parent"
-        if g is not None:
-            self.child.bck(g)
+        return grad_dict[self.op](grad, self.child) # in the backward sense, "child" becomes the "parent"
         
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
+        op_str = stylize(f"{self.op.name}", fore("medium_turquoise"))
         size_str = stylize(str(total), fore("yellow") + style("bold"))
         if self.kargs[0].is_none() or self.kres.is_none():
-            return f"{self.id} = {self.op} ({size_str}) --> ({self.child.id})"
+            return f"{self.id} = {op_str} ({size_str}) --> ({self.child.id})"
         else:
-            return f"{self.kres} = {self.op} ({size_str}) --> ({self.kargs[0]})"
+            return f"{self.kres} = {op_str} ({size_str}) --> ({self.kargs[0]})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, UnaryNode):
-            return False
-
-        return \
-            self.op == other.op and \
-            self.child.node_eq(other.child)
+    def repeat_helper (self, is_child):
+        if is_child:
+            return (self.id,)
+        else:
+            return ("Unary", self.op.value)

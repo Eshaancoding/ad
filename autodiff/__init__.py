@@ -41,31 +41,30 @@ def execute ():
     from .device.opencl import OpenCLDevice, CLDevice
     from .opt import mem_opt, set_in_place
 
-    # lock procedure
-    context.lock_proc = True
+    # prepare context for execution
+    context.prep_exec()
 
     # perform optimizations 
-
-    benchmark(lambda: dep_opt(context), "dep_opt")    # delete nodes that are not needed or computed
+    benchmark(lambda: dep_opt(context), "dep_opt")          # delete nodes that are not needed or computed
     benchmark(lambda: simpl_node(context), "simplify node") # apply graph-level optimizations (ex: constant simplification)
-    benchmark(lambda: repeat_opt(context), "repeat_opt") # re-use nodes already computed
+    benchmark(lambda: repeat_opt(context), "repeat opt")    # removes computation already repeated
 
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
     benchmark(lambda: kernalize(context), "kernalize")
+    
+    #pg()
 
     # Linearize + fusion
-    proc = linearize_two(context.main_proc())
+    proc = benchmark(lambda: linearize_two(context.main_proc()), "linearizing")
 
     # set in place ops
     proc = set_in_place(proc)
 
-    print(proc)
-    return
-
     # perform memory optimization
     proc = benchmark(lambda: mem_opt(proc), "mem opt")
-    
+
+    print(proc)
     
     # apply linear optimizations (dep opt, mem opt, as well as some memory accessing regrouping if needed)
     # see if you can make fusion better here as well (test)
@@ -79,6 +78,7 @@ def execute ():
         return n
     proc.walk(assign_program_id, step_fused=False, step_proc=True)
 
+    return
     # Send procedure to device to be executed
     print("executing...")
     start = time()

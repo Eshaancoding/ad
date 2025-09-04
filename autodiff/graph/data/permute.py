@@ -18,7 +18,7 @@ class PermuteNode (Node):
         super().__init__([child], dim)
         self.permute_to = permute_to
         
-    def bck(self, grad:Node):
+    def _bck(self, grad:Node):
         if not isinstance(grad, Node):
             raise TypeError("Grad is not node!")
 
@@ -26,16 +26,14 @@ class PermuteNode (Node):
         for i in range(len(self.permute_to)):
             inv_perm[self.permute_to[i]] = i
             
-        self.child.bck(grad.permute(inv_perm))
+        return grad.permute(inv_perm)
         
-
     def __repr__ (self):
         return f"{self.id} = Permute {self.permute_to} --> {self.child.id}"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, PermuteNode):
-            return False
-
-        return \
-            self.permute_to == other.permute_to and \
-            self.child.node_eq(other.child)
+    def repeat_helper (self, is_child):
+        return (
+            "Permute",
+            tuple(self.permute_to),
+            self.child.repeat_helper(True) if is_child else ()
+        )

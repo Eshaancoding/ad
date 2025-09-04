@@ -30,7 +30,7 @@ class MultiHeadAttention (Module):
         self.wk = [Linear(d_model, d_v, bias=False) for _ in range(num_heads)]
         self.wv = [Linear(d_model, d_v, bias=False) for _ in range(num_heads)]
         self.attentions = [Attention() for _ in range(num_heads)]
-        self.wo = Linear(d_model, d_model)
+        self.wo = Linear(d_model, d_model, bias=False)
         self.num_heads = num_heads
         self.d_model = d_model
         
@@ -65,16 +65,16 @@ class TransformerEncoderLayer (Module):
         self.attention = MultiHeadAttention(d_model, num_heads)
         self.layer_norm_att = LayerNorm(d_model)
         self.layer_norm_ffwd = LayerNorm(d_model)
-        self.ffwd = AttentionFeedforward(d_model, ff_dim)
+        #self.ffwd = AttentionFeedforward(d_model, ff_dim)
         
     def forward (self, x: Node) -> Node:
         y = self.attention(x, x, x)
-        y = self.layer_norm_att(x + y)     
+        #y = self.layer_norm_att(x + y)     
         
-        z = self.ffwd(y)
+        #z = self.ffwd(y)
         #z = self.layer_norm_ffwd(y + z)
         
-        return z
+        return y
     
 class TransformerEncoder (Module):
     def __init__ (self, num_layers: int, d_model: int, num_heads: int, ff_dim: int):

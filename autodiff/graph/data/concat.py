@@ -20,26 +20,20 @@ class ConcatNode (Node):
         super().__init__([left, right], d)
         self.dim = dim
     
-    def bck (self, grad:Node):
+    def _bck (self, grad:Node):
         l_dim = self.left.shape[self.dim]
         r_dim = self.right.shape[self.dim]
 
-        self.left.bck(
-            IndexNode(grad, 0, l_dim, self.dim)
-        )
-        
-        self.right.bck(
-            IndexNode(grad, l_dim, l_dim+r_dim, self.dim)
-        )
+        return IndexNode(grad, 0, l_dim, self.dim), \
+               IndexNode(grad, l_dim, l_dim+r_dim, self.dim)
     
     def __repr__ (self):
         return f"{self.id} = Concat at dim: {self.dim} --> ({self.left.id}, {self.right.id})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, ConcatNode):
-            return False 
-
-        return \
-            self.dim == other.dim and \
-            self.left.node_eq(other.left) and \
-            self.right.node_eq(other.right)
+    def repeat_helper (self, is_child):
+        return (
+            "Concat",
+            self.dim,
+            self.left.repeat_helper(True) if is_child else (),
+            self.right.repeat_helper(True) if is_child else ()
+        )

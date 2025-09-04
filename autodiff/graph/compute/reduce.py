@@ -20,25 +20,24 @@ class ReduceNode (Node):
         super().__init__([child], res_shape)
         self.op = op
         
-    def bck (self, grad:Node):
+    def _bck (self, grad:Node):
         repeat_n = self.children_shapes[0][-1]
-        self.child.bck(grad.unsqueeze(-1).broadcast(-1, repeat_n))
+        return grad.unsqueeze(-1).broadcast(-1, repeat_n)
         
     def __repr__ (self):
         sh = self.children_shapes[0]
         x_dim = sh[0] 
         y_dim = sh[1]
+        op_str = stylize(f"{self.op}", fore("turquoise_2"))
         size_str = stylize(f"(Vec/X: {x_dim}, Reduce/Y: {y_dim})", fore("yellow") + style("bold"))
         
         if self.kargs[0].is_none() or self.kres.is_none():
-            return f"{self.id} = {self.op} on dim: -1 {size_str} --> ({self.child.id})"
+            return f"{self.id} = {op_str} on dim: -1 {size_str} --> ({self.child.id})"
         else:
-            return f"{self.kres} = {self.op} on dim: -1 {size_str} --> ({self.kargs[0]})"
+            return f"{self.kres} = {op_str} on dim: -1 {size_str} --> ({self.kargs[0]})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, ReduceNode):
-            return False
-
-        return \
-            self.op == other.op and \
-            self.child.node_eq(other.child)
+    def repeat_helper (self, is_child):
+        if is_child:
+            return (self.id,)
+        else:
+            return ("Reduce", self.op.value)

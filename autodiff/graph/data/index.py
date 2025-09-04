@@ -16,7 +16,7 @@ class IndexNode (Node):
         self.end = end
         self.dim = dim
             
-    def bck(self, grad):
+    def _bck(self, grad):
         c_dim = self.children_shapes[0]
         
         first_dim = deepcopy(c_dim)
@@ -29,18 +29,16 @@ class IndexNode (Node):
         second = ConstantNode(0, second_dim)
         
         from autodiff import concat
-        g = concat([first, grad, second], self.dim)
-        self.child.bck(g)
+        return concat([first, grad, second], self.dim)
         
     def __repr__ (self):
         return f"{self.id} = Index dim: {self.dim} from {self.start} to {self.end} --> ({self.child.id})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, IndexNode):
-            return False
-
-        return \
-            self.start == other.start and \
-            self.end == other.end and \
-            self.dim == other.dim and \
-            self.child.node_eq(other.child)
+    def repeat_helper (self, is_child):
+        return (
+            "Index",
+            self.start,
+            self.end,
+            self.dim,
+            self.child.repeat_helper(True) if is_child else ()
+        )

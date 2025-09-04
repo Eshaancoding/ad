@@ -1,17 +1,25 @@
 from copy import deepcopy
 import math
-from typing import List, Optional
-
+from typing import Any, List, Optional, Tuple
+from enum import Enum
 from .kernalize import NoneKernelArg, KernelArg
+
+class ChildrenType (Enum):
+    SOURCE=0
+    BINARY=1
+    UNARY=2
+    RECEIVER=3
 
 class Node:
     ############################################################
+    
     ## Derived methods/init
     # TODO: Add res expr and shape to super().__init__()
     def __init__(self, children, shape:List[int], id_override:Optional[int] = None, is_receiver=False):
         from autodiff import context
 
         self.id = context.get_id() if id_override is None else id_override
+        
         self.children_shapes: List[List[int]] = []
         self.children_datacmds: Optional[List[List[Node]]] = [] # will be only datacmds nodes
         self.kargs: List[KernelArg] = []
@@ -42,37 +50,117 @@ class Node:
 
         # set the self.left, self.right, or self.child at children
         # It's easier to seperate them like this rather than having one single list[Node]
+        self.children_type = ChildrenType.SOURCE
         if is_receiver:
             self.rec_children = children # only in the case of receiver node  
+            self.children_type = ChildrenType.RECEIVER
         elif len(children) == 1:
             self.child: Node = children[0]
+            self.children_type = ChildrenType.UNARY
         elif len(children) == 2:
             self.left: Node = children[0]
             self.right: Node = children[1]
+            self.children_type = ChildrenType.BINARY
         elif len(children) != 0:
-            raise TypeError("Children length is invalid (expected one or two)")
+            raise TypeError("Children length is invalid")
 
+        # helpful for backward propogation
+        self.incoming_grad = None
         self.shape = list(shape) # set shape
         
-    def bck (self, grad):
-        raise NotImplementedError
-    
     def __repr__ (self) -> str:
         raise NotImplementedError
 
-    def node_eq (self, other) -> bool:
-        """
-        compares equality of node. Should be used before kernalize
-        Shouldn't compare resultant id; just the structure + child checks
-        """
+    def repeat_helper (self, is_child=False):
         raise NotImplementedError
-    
+
+    ############################################################
+    ## Backward Propogation
+    # returns nodes related to backward computation
+    def _bck (self, grad):
+        raise NotImplementedError
+
+    def _record_connections (self, fr=None): 
+        """
+        This function tracks the connections of the computation graph
+        This is extremely helpful as we do not want to go backward node
+        until we have reached all accumulated gradients 
+        """
+
+        from .context import context
+        from autodiff.graph.tensor import Tensor
+        from autodiff.graph.data.constant import ConstantNode
+
+        if self.id not in context.connections:
+            context.connections[self.id] = set()
+
+        if fr is not None:
+            context.connections[self.id].add(fr)
+
+        # go backward
+        for ch in self.children():
+            s = (ch.id, self.id)
+            if s not in context.conn_seen:
+                ch._record_connections(fr=self.id)
+                context.conn_seen.add(s)
+        
+        # global 
+        if fr is None: 
+            context.connections = {
+                key:val
+                for key,val in context.connections.items()
+                if len(val) > 1
+            }
+
+    # Every node will have an incoming gradient. Every incoming gradient
+    # are accumulated before it goes through children
+    def backward (self, grad=None):
+        from .graph import ConstantNode 
+        from .context import context
+        from autodiff.graph.compute.binary import BinaryNode, BinaryOp
+
+        # running backward globally
+        if grad is None:
+            # reset context
+            context.grads_seen = dict()  
+            context.connections = dict()
+            context.conn_seen = set()
+            self._record_connections()
+            grad = ConstantNode(1.0, self.shape)
+
+        # check if its in context seen    
+        # if seen, then add grad accumulation
+        if self.id in context.grads_seen:
+            self.incoming_grad = BinaryNode(
+                self.incoming_grad,
+                grad,
+                BinaryOp.ADD,
+                False
+            )
+
+            context.grads_seen[self.id] += 1
+        else:
+            # add to grads seen, update incoming grad
+            context.grads_seen[self.id] = 1
+            self.incoming_grad = grad
+
+        # else, go through children backward only if we have accumulated all incoming gradients
+        num_connect = len(context.connections[self.id]) if self.id in context.connections else 1 
+        if num_connect <= context.grads_seen[self.id]:
+            grad_result = self._bck(self.incoming_grad)
+            if grad_result is None: 
+                return
+            if self.children_type == ChildrenType.UNARY:
+                self.child.backward(grad_result)
+            elif self.children_type == ChildrenType.BINARY: 
+                self.left.backward(grad_result[0])
+                self.right.backward(grad_result[1])
+
     ############################################################
     ## Other methods
     # Calls backend 
-    def backward (self):
-        from .graph import ConstantNode 
-        self.bck(ConstantNode(1.0, self.shape))
+    def __hash__ (self):
+        return hash(self.id)
 
     def keep (self):
         """
@@ -208,7 +296,7 @@ class Node:
         from .graph import DotProdNode
         return DotProdNode(self._to_node(other, None), self)
 
-    # in place opeartions +=, -=, *=, /=
+    # in place operations +=, -=, *=, /=
     def __iadd__ (self, other):
         from .graph import BinaryNode, BinaryOp, try_broadcast
         a, b = try_broadcast(self, self._to_node(other, self.shape), only_right_broadcast=True)

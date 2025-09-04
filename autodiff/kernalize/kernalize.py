@@ -3,7 +3,7 @@ from ..expr import *
 from ..expr.simplify import simplify_expr
 from ..helper import global_to_ndim, ndim_to_global, walk_graph, ndim_change_datacmds
 from ..node import Node
-from ..context import Context, context
+from ..context import Context
 
 from ..graph import *
 from . import KernelArg, KMatrix, KConcat, KConstant
@@ -68,7 +68,7 @@ def fill_child_datacmds (node: Node, _):
 
     return node
                
-def make_karg (initial_dim, child: Node, data_cmds, shape, size_hint:Optional[int]=None):
+def make_karg (initial_dim, child: Node, data_cmds, shape, size_hint:Optional[int]=None, is_concat=False):
     if isinstance(child, ConstantNode):
         return KConstant(child.constant)
     elif isinstance(child, ConcatNode):
@@ -85,14 +85,16 @@ def make_karg (initial_dim, child: Node, data_cmds, shape, size_hint:Optional[in
             dim,
             child.left,
             child.children_datacmds[0],
-            child.children_shapes[0]
+            child.children_shapes[0],
+            is_concat=True
         )
         
         karg_two=make_karg(
             dim_two,
             child.right,
             child.children_datacmds[1],
-            child.children_shapes[1]
+            child.children_shapes[1],
+            is_concat=True
         )
         
         return KConcat(
@@ -101,10 +103,14 @@ def make_karg (initial_dim, child: Node, data_cmds, shape, size_hint:Optional[in
             condition=condition,
             shape=shape
         )
-        
     else:
-        dim = ndim_change_datacmds(initial_dim, data_cmds)
-        dim = simplify_expr(ndim_to_global(dim, child.shape), size_hint)
+        if not is_concat and len(data_cmds) == 0 and initial_dim != [X(), Y()]:
+            dim = Global()
+        else:
+            dim = ndim_change_datacmds(initial_dim, data_cmds)
+            dim = simplify_expr(ndim_to_global(dim, child.shape), size_hint)
+            
+
         return KMatrix(child.id, dim, child.shape)
    
 def make_res_arg (kern_id:int, is_global:bool, shape:list) -> KernelArg:
@@ -153,7 +159,7 @@ def calc_exprs (node: Node, _):
             if n.children_datacmds is None:
                 return n
 
-            size = math.prod(n.shape) 
+            size = math.prod(n.shape)
 
             # calc left
             n.kargs[0] = make_karg(

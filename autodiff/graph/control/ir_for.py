@@ -11,11 +11,14 @@ class ForNode (Node):
         self.block = block
         self.r = r
         
-    def bck(self, grad):
+    def _bck(self, grad):
         raise TypeError("Calling backward on a for node") 
     
     def __repr__(self):
         return f"{self.id} = For {self.r.start} to {self.r.stop}:"
 
-    def node_eq(self, other) -> bool:
-        raise Exception("For node on node_eq")
+    def repeat_helper(self, is_child):
+        return (
+            "For",
+            self.id
+        )

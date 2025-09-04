@@ -9,8 +9,8 @@ class ContigiousNode (Node):
     def __init__(self, child:Node):
         super().__init__([child], child.shape)
         
-    def bck(self, grad:Node):
-        self.child.bck(grad)
+    def _bck(self, grad:Node):
+        return grad
         
     def __repr__ (self):
         if self.kargs[0].is_none() or self.kres.is_none():
@@ -18,8 +18,8 @@ class ContigiousNode (Node):
         else:
             return f"{self.kres} = Contigious ({self.child.id}: {self.kargs[0]})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, ContigiousNode):
-            return False
-
-        return self.child.node_eq(other.child)
+    def repeat_helper (self, is_child):
+        if is_child:
+            return (self.id,)
+        else:
+            return ("Contigious",)

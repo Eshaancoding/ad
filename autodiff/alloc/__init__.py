@@ -67,6 +67,7 @@ def alloc (proc: Proc):
     benchmark(lambda: temp_alloc(proc, fused_ids_to_f), "temp alloc")
 
     benchmark(lambda: tetris_opt(proc), "mem opt") # feeder depends on tetris opt a lot; don't delete
+
     benchmark(lambda: temp_clean(proc), "temp clean")
 
     return proc

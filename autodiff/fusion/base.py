@@ -21,11 +21,17 @@ class FuseBase ():
         self.dep_match = dep_match
         self.should_flatten = should_flatten
 
+        self.result_tracker = set()
         self.nodes: List[Node] = []
         self.init_node = None
         self.fuse_id = context.get_id()
 
     def _add_node(self, add, index=None):
+        # insert into result tracker
+        for r in get_res(add):
+            self.result_tracker.add(r)
+
+        # insert in self.nodes
         if isinstance(index, int): 
             self.nodes.insert(index, add)
         else:
@@ -57,17 +63,13 @@ class FuseBase ():
             self.add(node)
             return FuseResult.INIT
 
-        results = get_res(self)
-        
         # check if any of the nodes can fuse with the current node
-        for idx, n in enumerate(reversed(self.nodes)):
-            # if karg_match, then check res and deps match
-            if self.dep_match:
-                deps = get_deps(node)
-                if len(results.intersection(deps)) == 0:
-                    continue  
+        deps = get_deps(node)
+        if self.dep_match and len(self.result_tracker.intersection(deps)) == 0:
+            return FuseResult.NONE
 
-            # Then, check if we can fuse
+        # Then, check if we can fuse
+        for idx, n in enumerate(reversed(self.nodes)):
             if self._fuse(n, node):
                 self.add(node, len(self.nodes)-idx)
                 return FuseResult.ADD

@@ -7,15 +7,11 @@ class ConstantNode (Node):
         super().__init__([], shape)
         self.constant = constant 
         
-    def bck (self, _):
-        pass # no backward for constant
+    def _bck (self, _):
+        return None
     
     def __repr__ (self) -> str:
         return f"{self.id} = Const(val: {self.constant}, dim: {self.shape})"
 
-    def node_eq(self, other) -> bool:
-        if not isinstance(other, ConstantNode):
-            return False
-        
-        return self.constant == other.constant and \
-               self.shape == other.shape
+    def repeat_helper (self, is_child):
+        return (self.constant, tuple(self.shape))
