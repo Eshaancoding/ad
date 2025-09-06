@@ -1,24 +1,24 @@
+from autodiff.graph.tensor import Tensor
 from ..node import Node
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 class Module:
     def __init__(self):
-        self._parameters: List[Node] = []
+        self._parameters: Set[Tensor] = set()
         self._modules: List[Module] = []
 
     def _add_to_params (self, l: List[Node]):
-        current_ids = {i.id:1 for i in self._parameters}
+        current_ids = set({i.id for i in self._parameters})
         for n in l:
             if not (n.id in current_ids):
-                self._parameters.append(n)
+                self._parameters.add(n)
 
     def __setattr__(self, name, value):
-
-        if isinstance(value, Node):
+        if isinstance(value, Tensor):
             self._add_to_params([value])
-        elif isinstance(value, List) and len(value) > 0 and isinstance(value[0], Node):
+        elif isinstance(value, List) and len(value) > 0 and isinstance(value[0], Tensor):
             self._add_to_params(value)
-        elif isinstance(value, Tuple) and len(value) > 0 and isinstance(value[0], Node):
+        elif isinstance(value, Tuple) and len(value) > 0 and isinstance(value[0], Tensor):
             self._add_to_params(value)
 
         elif isinstance(value, Module):
@@ -34,7 +34,7 @@ class Module:
         for m in self._modules:
             self._add_to_params(m.parameters())
 
-        return self._parameters
+        return list(self._parameters)
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)

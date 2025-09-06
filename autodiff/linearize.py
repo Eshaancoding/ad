@@ -1,119 +1,271 @@
-from autodiff.graph.data.receiver import Receiver
-from .node import Node
-from toposort import toposort
+from copy import deepcopy
 from typing import Dict, List
-from .helper import walk_graph
-from .fusion import *
-from .graph import ConcatNode, ConstantNode
-from .context import Block, Proc
+from autodiff.context import Block, Proc
+from autodiff.fusion.base import FuseBase, FuseResult
+from autodiff.fusion.helper import get_deps, get_res, get_walking_path, print_toposort
+from autodiff.fusion.ops import ElwFuse, DPElwFuse, ReduceElwFuse
+from autodiff.helper import walk_graph
+from autodiff.node import Node
+from autodiff.print_graph import pg
+from toposort import toposort
 from pprint import pprint
 
-def linearize (proc: Block, already_decl: List[int] = []) -> Proc:
-    g_dep = {}
-    id_to_node = {}
+global_deps = {}
+id_to_node = {}
+block_to_node = {}
+alr_defined_global = {}
 
-    # Fill id to node
-    def fill_id_to_node (n: Node, visited: Dict[int, int] = {}):
-        # ConcatNode and ConstantNode is not folded by kernalize. Could be a todo for future releases
-        # For now, just ignore them at linearize
+def insert_to_global_dep (block_id:int, key:int, value:int):
+    global global_deps
+    if block_id not in global_deps:
+        global_deps[block_id] = dict() # initialize global deps with empty dictionary 
 
-        if (block_inner := n.get_block()) is not None:
-            # TODO: double check whether already_decl works in intense circumstances
-            # seems pretty... weird
-            n.proc = linearize(block_inner, already_decl=list(id_to_node.keys()))
-            id_to_node[n.id] = n
-        elif not isinstance(n, ConcatNode) and not isinstance(n, ConstantNode): 
-            id_to_node[n.id] = n
-
-        return n
-
-    walk_graph(proc.nodes, fill_id_to_node, walk_block=False)
-
-    # Fill deps (g_dep)
-    alr_decl_block = {}
-    
-    def fill_deps (n: Node, visited: Dict[int, int] = {}):
-        n_id = n.id
-        visited[n.id] = 1
-
-        # any node with a block will *automatically* assume that it's related to all of its previous nodes defined
-        # control opts are defined seperately (ex: taking expressions out of for)
-        if n.get_block() is not None:
-            g_dep[n_id] = list(g_dep.keys())
-            
-            # set alr_decl_block
-            res = get_res(n, True) 
-            for r in res:
-                alr_decl_block[r] = n_id
-
-            return n
-
-        ids_dep = n.kargs_child_ids()
-    
-        # check whether ids dep is already declared by prev block
-        for idx in range(len(ids_dep)):
-            id = ids_dep[idx]
-            ids_dep[idx] = alr_decl_block[id] if id in alr_decl_block else id
-        ids_dep = list(set(ids_dep))
-
-        # add to g dep
-        if n_id not in g_dep:
-            g_dep[n_id] = ids_dep
+    if key not in global_deps[block_id]:
+        if value is not None:
+            global_deps[block_id][key] = set({value}) 
         else:
-            g_dep[n_id].extend(ids_dep)
-            g_dep[n_id] = list(set(g_dep[n_id]))
+            global_deps[block_id][key] = set({}) 
+    elif value is not None:
+        global_deps[block_id][key].add(value)
 
-        for child_id in ids_dep:
-            if not child_id in visited:
-                fill_deps(id_to_node[child_id], visited)
+def get_deps_global (block: Block, alr_defined: Dict[int, int] = dict()):
+    global block_to_node, alr_defined_global
+   
+    # track alr defined 
+    if block.id not in alr_defined_global:
+        alr_defined_global[block.id] = list(alr_defined.keys())
 
-        return n
+    defined = dict()
+    vars_need_dep = dict()
+    
+    for n in block.nodes:
+        # step through the block
+        if (inner_bl := n.get_block()):
+            def_block, need_dep_block = get_deps_global(inner_bl, alr_defined | defined)
+        
+            for (dep, block_id) in deepcopy(list(need_dep_block.items())):
+                if block_id == block.id:
+                    insert_to_global_dep(block.id, n.id, dep)
+                    del need_dep_block[dep]
 
-    for n in proc.nodes:
-        fill_deps(n)
+            # update variables
+            defined.update(def_block)
+            vars_need_dep.update(need_dep_block)
+            block_to_node[inner_bl.id] = n.id
+        else:
+            # if regular node, go through the ids
+            visited = set()
+            def update_node (n:Node, visited):
+                # skip if node if already defined
+                if n.id in visited:
+                    return n
+                if n.id in alr_defined:
+                    return n
 
-    # filter g dep
-    for n_id in g_dep:
-        g_dep[n_id] = list(filter(lambda item: item not in already_decl, g_dep[n_id]))
-    g_dep = {key:val for key, val in g_dep.items() if len(val) > 0}
+                if isinstance(n, Node):
+                    # insert to global deps
+                    for dep in n.kargs_child_ids():
+                        should_visit = True 
+                        key = n.id
+                        value = dep
 
-    # toposort
-    toposort_res = list(toposort(g_dep))
+                        # referencing node already defined by lower-level blocks
+                        # ex: for loop referencing tensor defined in global block
+                        if dep in alr_defined:
+                            value = None
+                            should_visit = False
+                            vars_need_dep[dep] = alr_defined[dep]
+                        
+                        # referencing node already defined by upper-level blocks
+                        # ex: Receiver of the latest weight changed by upper for loop 
+                        if dep in defined:
+                            if (block_id_defined := defined[dep]) != block.id:
+                                should_visit = False
+                                value = block_to_node[block_id_defined]
+                                
+                        # insert to global dep
+                        insert_to_global_dep(block.id, key, value)
 
+                        # visit
+                        if should_visit:
+                            visited.add(n.id)
+                            update_node(id_to_node[dep], visited)
+
+                    # add to defined if not inserted already 
+                    if n.id not in defined:
+                        defined[n.id] = block.id
+                return n
+            
+            update_node(n, visited)
+
+    return defined, vars_need_dep
+
+def fuse (g_dep_id) -> Proc:
+    ########### Run through toposort ########### 
+    global global_deps, alr_defined_global
+    deps = global_deps[g_dep_id]
+
+    # run through toposort
+    toposort_res = list(toposort(deps))
     #print_toposort(toposort_res, id_to_node)
+    #if g_dep_id == 1:
+    #    exit(0)
 
-    # Fuse!
-    # TODO: watch for fusion node 80, 138
-    fusion_ops: List[FuseBase] = [
+    ########### Fusing Operation ###########
+    ops = [
         DPElwFuse,
         ReduceElwFuse,
-        ElwFuse,
+        ElwFuse  
     ]
-    
-    def fn_fuse (toposort_res, id_to_node, op, fuse_type):
-        # apply fuse operator until it can't
-        ch = 1
-        itr = 0
-        while ch > 0:
-            if fuse_type == FuseType.ACROSS_LAYER:
-                #import os
-                #os.system("clear")
-                #print_toposort(toposort_res, id_to_node)
-                toposort_res, ch = fuse_across(id_to_node, toposort_res, op)
-            elif fuse_type == FuseType.WITHIN_LAYER:
-                toposort_res, ch = fuse_within(id_to_node, toposort_res, op)
 
-            if itr >= 1000: # iter stop
-                print("FUSE OPERATION ITERATION PEAKED!!!") # alert the user; this shouldn't happen in most scenario
+    entries: List[FuseBase] = []
+    init_taken = set()
+
+    for op in ops:
+        while True:
+            op_entry: FuseBase = op() 
+            white_list_nodes = set()
+            
+            # Fusion process
+            did_start = False
+            for layer_idx, layer in enumerate(toposort_res):
+                did_sum = False
+
+                for node_idx in layer:
+                    deps_id = get_deps(id_to_node[node_idx])
+
+                    if node_idx in init_taken:
+                        # add to white listing if nodes intersect 
+                        if len(deps_id.intersection(op_entry.result_tracker)) > 0:
+                            white_list_nodes.update(get_walking_path(
+                                node=id_to_node[node_idx],
+                                toposort_res=toposort_res[layer_idx+1:],
+                                id_to_node=id_to_node
+                            ))
+                        continue # then skip 
+                    if node_idx in white_list_nodes:
+                        continue
+
+                    # attempt fuseMulti
+                    # alr defined doesn't matter
+                    result = op_entry.attempt_fuse(id_to_node[node_idx])
+
+                    if result in (FuseResult.ADD, FuseResult.INIT):
+                        init_taken.add(node_idx)
+                        did_sum = True
+                        did_start = True
+                    elif len(deps_id.intersection(op_entry.result_tracker)) > 0:
+                        # add to whitelisting
+                        white_list_nodes.update(get_walking_path(
+                            node=id_to_node[node_idx],
+                            toposort_res=toposort_res[layer_idx+1:],
+                            id_to_node=id_to_node
+                        ))
+
+                if did_start and not did_sum:
+                    break
+
+            # Fuse more of the node or carry on to the next
+            if len(op_entry.nodes) == 0: 
+                break # can't fuse no more
+            if len(op_entry.nodes) == 1:
+                init_taken.add(op_entry.nodes[0].id)
+            elif len(op_entry.nodes) > 1:
+                entries.append(op_entry)
+
+    # insert the fuse entries + get node to remove
+    nodes_to_remove = set()
+    for entry in entries:
+        did_found = False
+        for idx, layer in enumerate(toposort_res):
+            for id_node in layer:
+                if entry.nodes[-1].id == id_node:
+                    id_to_node[entry.fuse_id] = entry
+                    toposort_res[idx].add(entry.fuse_id)
+                    did_found = True
+                    break
+            if did_found:
                 break
- 
-        return toposort_res
+        if not did_found:
+            raise Exception("Couldn't find node in toposort_res to insert fused entry")
 
-    for op in fusion_ops:            
-        if op().type == FuseType.ALL:
-            toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.WITHIN_LAYER) 
-            toposort_res = fn_fuse(toposort_res, id_to_node, op, FuseType.ACROSS_LAYER) 
-        else:
-            toposort_res = fn_fuse(toposort_res, id_to_node, op, op().type)
+        for node in entry.nodes:
+            nodes_to_remove.add(node.id)
 
-    return Proc(flatten_toposort(toposort_res, id_to_node, already_decl))
+    # then, remove all in toposort res
+    for idx, layer in enumerate(toposort_res):
+        toposort_res[idx] = set(filter(lambda x: x not in nodes_to_remove, layer))
+
+    ####### Fill dep_to_fuse_id + run fuse on inner blocks ####### 
+
+    # replace dependency with their fuse id
+    replace = dict() 
+    for layer in toposort_res:
+        for node_id in layer:
+            node = id_to_node[node_id]
+
+            # if we have a node with block (ex: for), then fuse that as well
+            # should already exist in g_deps
+            if isinstance(node, Node) and (block := node.get_block()) is not None:
+                node.proc = fuse(block.id)
+                replace.update({r: node.id for r in get_res(node, True)})
+
+            # dep to fuse id
+            if isinstance(node, FuseBase):
+                replace.update({r: node.fuse_id for r in get_res(node)})
+
+    ########### Rerun toposort ###########
+    g_dep = {} 
+    for layer in toposort_res:
+        for idx in layer: 
+            node = id_to_node[idx]
+            deps = get_deps(node, step_proc=True)
+
+            # replace 
+            deps = set({
+                (replace[d] if d in replace else d)
+                for d in deps
+            })
+
+            # then get g_deps
+            id = node.id if isinstance(node, Node) else node.fuse_id
+            g_dep[id] = deps
+
+    # filter deps to only include the keys defined (everything else has been defined later)
+    for id in g_dep:
+        g_dep[id] = set(filter(lambda x: x in g_dep.keys(), g_dep[id]))
+
+    # finally, toposort it
+    toposort_res = list(toposort(g_dep))
+
+    ########### Linearize --> Return to proc ###########
+    proc = []
+    for layer in toposort_res:
+        for node_id in layer:
+            node = id_to_node[node_id]
+
+            # else, return to proc
+            proc.append(node)
+        
+    return Proc(proc)
+
+def linearize (main_block: Block):
+    global global_deps, id_to_node, block_to_node, alr_defined_global
+
+    ######## Insert all id to node ######## 
+    id_to_node = {}
+    def insert_id_to_node (node: Node, _):
+        if node.id not in id_to_node:
+            id_to_node[node.id] = node
+        return node
+    walk_graph(main_block, insert_id_to_node, walk_block=True, walk_child=True) 
+
+    ######## Get deps ########
+    global_deps = {}
+    block_to_node = {}
+    alr_defined_global = {}
+    _, d = get_deps_global(main_block)
+    assert len(d) == 0, "vars need dep not None!"
+
+    ######## Given the deps: fuse ########
+    return fuse(0) # fuse the global node + return proc 

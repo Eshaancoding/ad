@@ -1,3 +1,4 @@
+from autodiff.graph.data.constant import ConstantNode
 from ...node import Node
 from enum import Enum
 import math
@@ -35,11 +36,11 @@ class UnaryNode (Node):
             UnaryOp.SQRT:  lambda grad, parent: grad * (1.0 / (2.0 * parent.sqrt())),
             
             # Comparative ops don't have gradient 
-            UnaryOp.EQUAL: lambda _, _p: None,
-            UnaryOp.MORE_ZERO: lambda _, _p: None,
-            UnaryOp.LESS_ZERO: lambda _, _p: None,
-            UnaryOp.MORE_OR_EQ_ZERO: lambda _, _p: None,
-            UnaryOp.LESS_OR_EQ_ZERO: lambda _, _p: None,
+            UnaryOp.EQUAL: lambda _, _p: ConstantNode(0.0, self.shape),
+            UnaryOp.MORE_ZERO: lambda _, _p: ConstantNode(0.0, self.shape),
+            UnaryOp.LESS_ZERO: lambda _, _p: ConstantNode(0.0, self.shape),
+            UnaryOp.MORE_OR_EQ_ZERO: lambda _, _p: ConstantNode(0.0, self.shape),
+            UnaryOp.LESS_OR_EQ_ZERO: lambda _, _p: ConstantNode(0.0, self.shape)
         }
         
         return grad_dict[self.op](grad, self.child) # in the backward sense, "child" becomes the "parent"

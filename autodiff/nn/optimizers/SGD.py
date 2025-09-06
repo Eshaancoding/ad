@@ -2,13 +2,12 @@ from .. import Node, Tensor
 from typing import List
 
 class SGD:
-    def __init__(self, parameters: List[Node], lr=0.001):
+    def __init__(self, parameters: List[Tensor], lr=0.001):
         self.parameters = parameters
         self.lr = lr
 
         # for every parameter, set requires grad
         for p in self.parameters:
-            assert isinstance(p, Tensor)
             p.requires_grad = True
     
     def step (self):

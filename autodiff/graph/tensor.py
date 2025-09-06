@@ -12,7 +12,6 @@ class Tensor (Node):
     __match_args__ = ("arr")
     def __init__ (self, arr: np.array, requires_grad:bool=False):
         super().__init__([], list(arr.shape))
-
         self.arr = arr.astype(np.float32) # ensure float32 (might make a copy)
         self.grad_tensor = None
         self.requires_grad = requires_grad
@@ -45,17 +44,21 @@ class Tensor (Node):
         return f"Tensor(id: {self.id}, orig_shape: {self.shape})"
 
     @staticmethod
-    def randn (shape:list[int] | tuple):
-        return Tensor(np.random.randn(*shape))
+    def from_torch (arr, requires_grad:bool=False):
+        return Tensor(arr.numpy(), requires_grad=requires_grad)
+
+    @staticmethod
+    def randn (shape:list[int] | tuple, requires_grad=False):
+        return Tensor(np.random.randn(*shape), requires_grad)
     
     @staticmethod
-    def fill (val: float, shape:list[int]):
-        return Tensor(np.full(tuple(shape), val))
+    def fill (val: float, shape:list[int], requires_grad=False):
+        return Tensor(np.full(tuple(shape), val), requires_grad)
     
     @staticmethod
-    def ones (shape: list[int]):
-        return Tensor.fill(1.0, shape)
+    def ones (shape: list[int], requires_grad=False):
+        return Tensor.fill(1.0, shape, requires_grad)
     
     @staticmethod
-    def zeros (shape: list[int]):
-        return Tensor.fill(0.0, shape)
+    def zeros (shape: list[int], requires_grad=False):
+        return Tensor.fill(0.0, shape, requires_grad)

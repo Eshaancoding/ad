@@ -28,7 +28,7 @@ class ReduceNode (Node):
         sh = self.children_shapes[0]
         x_dim = sh[0] 
         y_dim = sh[1]
-        op_str = stylize(f"{self.op}", fore("turquoise_2"))
+        op_str = stylize(f"{self.op.name}", fore("turquoise_2"))
         size_str = stylize(f"(Vec/X: {x_dim}, Reduce/Y: {y_dim})", fore("yellow") + style("bold"))
         
         if self.kargs[0].is_none() or self.kres.is_none():

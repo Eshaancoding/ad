@@ -65,15 +65,19 @@ class Block ():
         if other.id in self.nodes:
             del self.nodes[other.id] 
 
-    def convert_to_nodes (self):
+    def to_list (self):
         if isinstance(self.nodes, List): # if already converted, don't do anything
-            return 
-
+            return self.nodes
         sorted_nodes = sorted(self.nodes.values(), key=lambda kv: kv[1]) # first sort by position
         n = []
         for kv in sorted_nodes:
             n.append(kv[0]) # just get the node for list
-        self.nodes = n
+        return n
+
+    def convert_to_nodes (self):
+        if isinstance(self.nodes, List): # if already converted, don't do anything
+            return 
+        self.nodes = self.to_list()
             
     def __repr__(self):
         st = ""
@@ -84,7 +88,8 @@ class Block ():
         return st
     
     def print_graph (self):
-        pg(self.nodes)
+        print(self.to_list())
+        pg(self.to_list())
 
 # Shared context as graph is carried out. 
 # Includes procedure tracking, dependency list, and unique id generation

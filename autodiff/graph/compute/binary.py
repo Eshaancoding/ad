@@ -24,7 +24,7 @@ class BinaryNode (Node):
         if self.op == BinaryOp.ADD:
             return grad, grad
         elif self.op == BinaryOp.MULT:
-            return grad * self.right, grad * self.right
+            return grad * self.right, grad * self.left
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)

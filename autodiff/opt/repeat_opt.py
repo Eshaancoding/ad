@@ -14,9 +14,8 @@ def _intern_repeat_opt (context: Context):
     pot_nodes: Dict[Any, List[Node]] = {}
     
     def track_nodes (node: Node, _):
-        # ********** completely terrible way to find duplicate nodes ********** 
-
         # don't add any for loops 
+
         if node.get_block() is not None: 
             return node
 

@@ -6,9 +6,10 @@
 
 * Numerical tests 
     * different opts + neural networks, etc.
-    * Make sure you can do divergent branching correctly
-    * To fix errors:
-        * etc. etc. etc. Make sure you do it accordingly
+
+    * Double check: Make sure you can do divergent branching correctly
+
+* Simple change: tetris alloc try different types of sorting and pick the best one
 
 ----- performance testing? save to drive  -----
 
@@ -42,10 +43,6 @@
         * on tensorrt by nvidia, there's specific guidelines for this as well (different execution profiles without CPU intervention?)
         * more research needs to be done in that area
     * then, you can add dynamic slices with indexing, etc.
-
-* Compact the linearizer a lil better? + Elw --> Dotprod/Reduce
-    * might need to run computation **again** after toposort_res
-    * Other lineraizer methods --  
 
 * Indexing via a non constant node
     * can't do slices --> requires dynamic shapes

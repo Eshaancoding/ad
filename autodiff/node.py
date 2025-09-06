@@ -80,37 +80,30 @@ class Node:
     def _bck (self, grad):
         raise NotImplementedError
 
-    def _record_connections (self, fr=None): 
+    def _record_connections (self, parent_id=None, visited=set()): 
         """
         This function tracks the connections of the computation graph
         This is extremely helpful as we do not want to go backward node
         until we have reached all accumulated gradients 
         """
-
         from .context import context
-        from autodiff.graph.tensor import Tensor
-        from autodiff.graph.data.constant import ConstantNode
+        visited.add(self.id)
 
-        if self.id not in context.connections:
-            context.connections[self.id] = set()
+        if parent_id is not None:
+            if self.id not in context.connections:
+                context.connections[self.id] = [parent_id]
+            else:
+                context.connections[self.id].append(parent_id)
 
-        if fr is not None:
-            context.connections[self.id].add(fr)
-
-        # go backward
-        for ch in self.children():
-            s = (ch.id, self.id)
-            if s not in context.conn_seen:
-                ch._record_connections(fr=self.id)
-                context.conn_seen.add(s)
-        
-        # global 
-        if fr is None: 
-            context.connections = {
-                key:val
-                for key,val in context.connections.items()
-                if len(val) > 1
-            }
+        for child in self.children():
+            if child.id not in visited: 
+                child._record_connections(
+                    parent_id=self.id, 
+                    visited=visited
+                )
+            else:
+                context.connections[child.id].append(self.id)
+                
 
     # Every node will have an incoming gradient. Every incoming gradient
     # are accumulated before it goes through children
@@ -125,7 +118,7 @@ class Node:
             context.grads_seen = dict()  
             context.connections = dict()
             context.conn_seen = set()
-            self._record_connections()
+            self._record_connections(parent_id=None, visited=set())
             grad = ConstantNode(1.0, self.shape)
 
         # check if its in context seen    
@@ -146,15 +139,18 @@ class Node:
 
         # else, go through children backward only if we have accumulated all incoming gradients
         num_connect = len(context.connections[self.id]) if self.id in context.connections else 1 
-        if num_connect <= context.grads_seen[self.id]:
+        if num_connect == context.grads_seen[self.id]:
             grad_result = self._bck(self.incoming_grad)
-            if grad_result is None: 
-                return
+
             if self.children_type == ChildrenType.UNARY:
-                self.child.backward(grad_result)
+                if grad_result is not None: 
+                    self.child.backward(grad_result)
             elif self.children_type == ChildrenType.BINARY: 
-                self.left.backward(grad_result[0])
-                self.right.backward(grad_result[1])
+                if grad_result[0] is not None: 
+                    self.left.backward(grad_result[0])
+                if grad_result[1] is not None: 
+                    self.right.backward(grad_result[1])
+            
 
     ############################################################
     ## Other methods
@@ -517,7 +513,7 @@ class Node:
     def mean (self, dim: int):
         return self.sum(dim) / self.shape[dim]
     
-    def var (self, dim, correction=0):
+    def var (self, dim, correction=1):
         a = (self - self.mean(dim).unsqueeze(dim)).pow2()
         return a.sum(dim) / (self.shape[dim] - correction)
     

@@ -41,4 +41,4 @@ __kernel void {name} (
     # buffer args
     args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
 
-    return build_kernel(dev, name, program_str, args, (prod(cmd.get_elw().shape), ), None)
+    return build_kernel(dev, name, program_str, args, (prod(cmd.init_node.shape), ), None)

@@ -1,6 +1,4 @@
-from autodiff import device
 from autodiff.fusion.base import FuseBase
-from autodiff.linearize_two import linearize_two
 from autodiff.opt import dep_opt, mem_opt, repeat_opt
 from autodiff.opt.simplify import simpl_node
 from .context import context
@@ -49,14 +47,14 @@ def execute ():
     benchmark(lambda: simpl_node(context), "simplify node") # apply graph-level optimizations (ex: constant simplification)
     benchmark(lambda: repeat_opt(context), "repeat opt")    # removes computation already repeated
 
+    #pg()
+
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
     benchmark(lambda: kernalize(context), "kernalize")
-    
-    #pg()
 
     # Linearize + fusion
-    proc = benchmark(lambda: linearize_two(context.main_proc()), "linearizing")
+    proc = benchmark(lambda: linearize(context.main_proc()), "linearizing")
 
     # set in place ops
     proc = set_in_place(proc)
@@ -78,7 +76,6 @@ def execute ():
         return n
     proc.walk(assign_program_id, step_fused=False, step_proc=True)
 
-    return
     # Send procedure to device to be executed
     print("executing...")
     start = time()

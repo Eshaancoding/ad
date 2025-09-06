@@ -72,14 +72,18 @@ def ndim_change_datacmds (dim: List[Expression], data_cmds: List[Node]):
                 
     return dim
 
-def _walk_node (n: Node, visited: Dict[int, int], f: Callable, walk_block=True, walk_child=True, **kwargs) -> Node: 
+# global visited
+visited = {}
+
+def _walk_node (n: Node, f: Callable, walk_block=True, walk_child=True, **kwargs) -> Node: 
+    global visited
     res = f(n, visited, **kwargs)    
     visited[n.id] = 1
     if res is None:
         return None
     elif (block := res.get_block()) is not None:
         if walk_block:
-            res.block.nodes = walk_graph(block.nodes, f, walk_block, walk_child, **kwargs)
+            res.block.nodes = walk_graph(block.nodes, f, walk_block, walk_child, reset_visited=False, **kwargs)
             res.block.nodes = list(filter(lambda x: x is not None, res.block.nodes))
     elif walk_child:
         if isinstance(res, Receiver):
@@ -88,7 +92,6 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, walk_block=True, 
                 if (ch.id not in visited):
                     res.rec_children[idx] = _walk_node(
                         ch,
-                        visited,
                         f,
                         walk_block,
                         walk_child,
@@ -96,16 +99,16 @@ def _walk_node (n: Node, visited: Dict[int, int], f: Callable, walk_block=True, 
                     )
         elif hasattr(res, "child"):
             if (res.child.id not in visited):
-                res.child = _walk_node(res.child, visited, f, walk_block, walk_child, **kwargs)
+                res.child = _walk_node(res.child, f, walk_block, walk_child, **kwargs)
         elif hasattr(res, "left") and hasattr(res, "right"):
             if (res.left.id not in visited):
-                res.left = _walk_node(res.left, visited, f, walk_block, walk_child, **kwargs)
+                res.left = _walk_node(res.left, f, walk_block, walk_child, **kwargs)
             if (res.right.id not in visited):
-                res.right = _walk_node(res.right, visited, f, walk_block, walk_child, **kwargs)
+                res.right = _walk_node(res.right, f, walk_block, walk_child, **kwargs)
 
     return res
 
-def walk_graph (n: Node|List[Node]|Block, f: Callable, walk_block=True, walk_child=True, **kwargs) -> Union[List[Node], Node, Block]:
+def walk_graph (n: Node|List[Node]|Block, f: Callable, walk_block=True, walk_child=True, reset_visited=True, **kwargs) -> Union[List[Node], Node, Block]:
     """
     Walks through the graph of node or list of nodes. Includes options to walk over block (ex: for node) or child.
     Furthermore, the function could replace a node (just return a new one), or if returns None, removes the node from the list
@@ -113,15 +116,18 @@ def walk_graph (n: Node|List[Node]|Block, f: Callable, walk_block=True, walk_chi
     NOTE: This uses .left, .right and .child. It will walk through .children() (ex: the Concat nodes, even though folded at internally kernalize), not the kargs_child_ids()
     """
 
+    global visited
+    if reset_visited: visited.clear() 
+
     if isinstance(n, Block):
         n.nodes = walk_graph(n.nodes, f, walk_block, walk_child, **kwargs)
         return n
     elif isinstance(n, list) and len(n) > 0 and isinstance(n[0], Node):
         new_list = []
-        visited = {}
         for node in n:
-            new_list.append(_walk_node(node, visited, f, walk_block, walk_child, **kwargs))
-        new_list = list(filter(lambda x: x is not None, new_list))
+            if (res_node := _walk_node(node, f, walk_block, walk_child, **kwargs)) is not None:
+                new_list.append(res_node)
+
         return new_list
     elif isinstance(n, Node):
         return _walk_node(n, {}, f, walk_block, walk_child, **kwargs)
