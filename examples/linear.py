@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from autodiff import execute, ir_for, Feeder, Receiver, print_graph
 import autodiff
 from autodiff.nn import Linear, Sequential, Sigmoid, TransformerEncoder, SGD 
@@ -10,25 +14,26 @@ import numpy as np
 autodiff.graph.tensor.is_testing = True
 
 nn = Sequential(
-    Linear(256, 256),
+    Linear(255, 255),
     Sigmoid(),
-    Linear(256, 256)
+    Linear(255, 255)
 )
 
 def print_inp (res):
     pass
 
 def save_params (*args):
-    print(len(args))
-    for arg in args:
-        print(arg)
+    pass
+    #print(len(args))
+    #for arg in args:
+        #print(arg)
 
 opt = SGD(nn.parameters(), lr=0.01)
 def f():
     opt.zero_grad()
     val = Feeder(
-        lambda: np.full((2,256), 0.2, dtype=np.float32), 
-        shape=[2,256]
+        lambda: np.full((2,255), 0.2, dtype=np.float32), 
+        shape=[2,255]
     )
     res = nn(val)
     res.backward() 

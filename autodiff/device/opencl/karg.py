@@ -20,7 +20,7 @@ def lower_expr (expr: Expression | Value) -> str:
         case Add(a, b):
             return f"({lower_expr(a)} + {lower_expr(b)})"
         case Minus(a, b):
-            return f"({lower_expr(a)} + {lower_expr(b)})"
+            return f"({lower_expr(a)} - {lower_expr(b)})"
         case Mult(a, b):
             return f"({lower_expr(a)} * {lower_expr(b)})"
         case Div(a, b):
@@ -49,7 +49,7 @@ def lower_karg (karg: KernelArg):
         else:
             return f"buf_{karg.id}[{lower_expr(karg.access)}]"
     elif isinstance(karg, KConcat):
-        return f"({lower_expr(karg.condition)} ? {lower_karg(karg.karg_one)} : {lower_karg(karg.karg_two)})"
+        return f"({lower_expr(karg.condition)} ? ({lower_karg(karg.karg_two)}) : ({lower_karg(karg.karg_one)}))"
     elif isinstance(karg, KConstant):
         return str(karg.constant)
     

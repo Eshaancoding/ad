@@ -11,14 +11,10 @@ class Attention (Module):
         super().__init__()
         
     def forward (self, Q: Node, K: Node, V: Node, d_model:int, mask: Optional[Node] = None) -> Node:
-        inner = dot(Q, K.T()) / sqrt(d_model)
+        inner = dot(Q, K.T()) / sqrt(float(d_model))
         if mask is not None:
             inner = inner * mask
-
-        return dot(
-            inner.softmax(-1),
-            V
-        )
+        return dot(inner.softmax(-1), V)
     
 class MultiHeadAttention (Module):
     def __init__ (self, d_model: int, num_heads: int):

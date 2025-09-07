@@ -8,7 +8,7 @@ def set_in_place (proc: Proc):
     repl = {}
 
     # reset cache for get deps 
-    get_deps.cache_clear()
+    #get_deps.cache_clear()
 
     def binary_set (node: Node, _):
         if isinstance(node, BinaryNode) and node.in_place:

@@ -67,9 +67,6 @@
         * reason why multiple kernels on enqueue are slow is because they require synchronization
             * we want to decrease the amount of synchronization as much as possible
 
-* ternary statements?
-    * could be even more advanced like: x>0 ? g(x) : f(x) where g(x) and f(x) could be full neural network functions
-    
 * Tensor/multi-gpu sharding
 
 * New attention mechanism?
@@ -84,6 +81,9 @@
             * ex: splitting heads
 
 ## Extra TODO
+* ternary statements?
+    * could be even more advanced like: x>0 ? g(x) : f(x) where g(x) and f(x) could be full neural network functions
+
 * **EXTRA**: index available at "for" node 
     * store copies at CPU + device.
     * must have if statement done (more control)

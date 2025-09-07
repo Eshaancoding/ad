@@ -86,6 +86,7 @@ def insert_alloc (main_proc: Proc) -> Dict[int, FuseBase]:
     # TODO: Include dep opt to make this happen less
     # + repeat opt (and general node optimization)
     for var in tracker:
+        print("Leftover variables:", var)
         dealloc_locs[var] = (
             Location(len(main_proc.procedure), None, None),
             DeallocEntry(var, id_to_size[var])

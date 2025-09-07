@@ -6,8 +6,7 @@ from typing import Optional
 def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
     if isinstance(expr, Value) or isinstance(expr, Val):
         return expr
-
-    match expr:
+    match expr: 
         ############### Constant Simplification
 
         ############### Ones
@@ -79,7 +78,15 @@ def simpl_expr_inner (expr: Expression, size: Optional[int]) -> Expression:
                 return simpl_expr_inner(BitwiseAnd(node, Val(Constant(constant - 1))), size)
         
         # ((_ % 3) % 3) --> _ % 3
-        case Remainder(Remainder(_ as node, Val(Constant(_ as const_one))), Val(Constant(_ as const_two))):
+        case Remainder(
+            Remainder(
+                _ as node, 
+                Val(Constant(_ as const_one))
+            ), 
+            Val(Constant(_ as const_two))
+        ):
+            print("all of me")
+            print(expr)
             if const_one == const_two:
                 return simpl_expr_inner(Remainder(node, Val(Constant(const_one))), size)
 
@@ -153,10 +160,7 @@ def simplify_expr (expr: Expression, size: Optional[int]):
     start = expr
     while True:
         end = simpl_expr_inner(start, size)
-        
-        if end == start: 
-            break
+        if str(end) == str(start): 
+            return simpl_expr_inner(end, size)
         else:
             start = end
-        
-    return end

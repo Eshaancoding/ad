@@ -1,5 +1,10 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from autodiff import execute, ir_for, Feeder, Receiver
 import autodiff
+import os
 from autodiff.nn import TransformerEncoder, SGD 
 from autodiff.nn.transformer import * 
 from autodiff.helper import benchmark
@@ -33,12 +38,10 @@ def f():
     res.backward() 
     opt.step()
 
-    Receiver(lambda: None, [res])
+    #Receiver(lambda _: None, [res])
 
 # In future release pass the idx
-benchmark(lambda: ir_for(range(0, 100), f), name="Tracking nodes")
-
+benchmark(lambda: ir_for(range(0, 3000), f), name="Tracking nodes")
 Receiver(save_params, opt.parameters, name="saving params")
-
 benchmark(lambda: execute(), name="full exec")
 

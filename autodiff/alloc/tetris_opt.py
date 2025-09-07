@@ -75,7 +75,6 @@ def tetris_opt (proc: Proc):
         global idx
         if proc_id not in var_tracker:
             var_tracker[proc_id] = {}
-
         if isinstance(node, AllocEntry):
             if not node.is_temp and node.content is None: 
                 var_tracker[proc_id][node.id] = VarEntry(node.id, idx, None, node.size)
@@ -89,7 +88,7 @@ def tetris_opt (proc: Proc):
     idx = 0
     proc.walk(walk_proc)
 
-    # remove dict values where there's None values
+    # remove dict values where v.end_idx is None
     for proc_id in var_tracker:
         var_tracker[proc_id] = {k:v for k, v in var_tracker[proc_id].items() if v.end_idx is not None}
     

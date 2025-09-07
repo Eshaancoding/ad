@@ -6,7 +6,9 @@ from typing import Set, List, Dict
 from toposort import toposort
 from ..helper import walk_graph
 
-@cache
+#@cache # problem with this is that after kernalize or mem_opt 
+# other reuse the same node.id
+# cache won't work in this case
 def get_deps (node: Node, step_proc:bool=False) -> Set[int]:
     """ Note, uses kernalize result """
     from .base import FuseBase

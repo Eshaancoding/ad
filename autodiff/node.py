@@ -524,7 +524,7 @@ class Node:
         return 1 / (1 + (-self).exp())
     
     def softmax (self, dim:int):
-        return self.exp() / self.exp().sum(dim)
+        return self.exp() / self.exp().sum(dim).unsqueeze(dim)
     
     # use comparisons; much faster and easier to compute
     def relu (self):
