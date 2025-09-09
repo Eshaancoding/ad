@@ -115,5 +115,5 @@ class CudaDevice (Device):
         print(f"Freed {len(self.modules)} kernels")
 
         # free everything else
-        if hasattr(self.context):
+        if hasattr(self, "context"):
             free_context(self.context)
