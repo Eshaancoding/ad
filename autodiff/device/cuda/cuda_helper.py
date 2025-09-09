@@ -61,8 +61,9 @@ def print_info (dev):
     ))
     
     # Get name of device <-- not sure about this code
+    print("Getting name...")
     name = ctypes.string_at(init_c_var(
-        ctypes.POINTER(ctypes.c_char)(), 
+        ctypes.create_string_buffer(100),
         lambda x: cuda.cuDeviceGetName(x, 100, dev)
     )).decode()
 
