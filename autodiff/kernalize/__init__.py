@@ -52,7 +52,8 @@ class KMatrix (KernelArg):
             t = stylize("Temp", fore("cyan"))
             return f"{t} {self.id}"
         else:
-            return f"Mat ({stylize(f"id: {self.id}", fore("blue"))}, {self.access})"
+            id_str = stylize(f"id: {self.id}", fore("blue"))
+            return f"Mat ({id_str}, {self.access})"
     
     def get_ids (self, filter_temp=False):
         if filter_temp and self.is_temp:
