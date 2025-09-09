@@ -1,5 +1,4 @@
-import cuda
-import nvrtc
+from . import nvrtc, cuda
 
 from dataclasses import dataclass
 import ctypes
