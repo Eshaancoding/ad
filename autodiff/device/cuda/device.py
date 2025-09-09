@@ -17,8 +17,6 @@ class CudaDevice (Device):
         self.context = init_context(dev) 
         self.arch = print_info(dev)
 
-        print("CUDA Initialization!!!!")
-
     def init (self, cmd):
         from .kernels import init_dotprod, init_unary, init_binary, init_reduce, init_contigious, init_elwfuse, init_dp_elw_fuse, init_reduce_elw_fuse
         

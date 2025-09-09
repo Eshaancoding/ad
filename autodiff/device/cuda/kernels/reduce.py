@@ -2,7 +2,7 @@ from ....graph import *
 from ....context import *
 from ..karg import *
 from math import ceil
-from ..device import CudaDevice, OpenCLDevice
+from ..device import CudaDevice
 from ..cuda_helper import *
 
 def lower_reduce_op (op: ReduceOp, orig:str, new:str):
