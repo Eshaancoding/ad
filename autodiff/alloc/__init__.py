@@ -40,7 +40,8 @@ class AllocEntry (AllocCmds):
         self.is_temp = False
         
     def __repr__ (self):
-        return stylize(f"{"TEMP " if self.is_temp else ""}Alloc", fore("cyan") if self.is_temp else fore("green")) + f" {self.id} " \
+        is_temp_str = "TEMP " if self.is_temp else ""
+        return stylize(f"{is_temp_str}Alloc", fore("cyan") if self.is_temp else fore("green")) + f" {self.id} " \
             + (stylize(str(self.size), fore("yellow") + style("bold")) if not self.is_temp else "") \
             + (" (has content)" if self.content is not None else "")
   
@@ -52,7 +53,8 @@ class DeallocEntry (AllocCmds):
         self.is_temp = False
 
     def __repr__ (self):
-        return stylize(f"{"TEMP " if self.is_temp else ""}Dealloc", fore("red")) + f" {self.id} " + stylize(str(self.size), fore("yellow") + style("bold"))
+        is_temp_str = "TEMP " if self.is_temp else ""
+        return stylize(f"{is_temp_str}Dealloc", fore("red")) + f" {self.id} " + stylize(str(self.size), fore("yellow") + style("bold"))
     
 def alloc (proc: Proc):
     from .insert import insert_alloc

@@ -23,7 +23,9 @@ class DotProdNode (Node):
         r_shape = self.children_shapes[1]
 
         op_str = stylize("Dot Prod", fore("turquoise_2"))
-        size_str = f"{stylize(l_shape, fore("yellow") + style("bold"))} x {stylize(r_shape, fore("yellow") + style("bold"))}"
+        l_str = stylize(l_shape, fore("yellow") + style("bold"))
+        r_str = stylize(r_shape, fore("yellow") + style("bold"))
+        size_str = f"{l_str} x {r_str}"
         
         if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
             return f"{self.id} = {op_str} {size_str} --> ({self.left.id}, {self.right.id})"
