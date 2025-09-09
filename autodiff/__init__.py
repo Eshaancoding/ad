@@ -79,6 +79,7 @@ def execute ():
     print("executing...")
     start = time()
     CudaDevice().execute(proc)
+    #OpenCLDevice().execute(proc)
     print(f"********* EXEC TIME: {(time() - start)*1000:.3f} ms **********") 
 
 ##########################################

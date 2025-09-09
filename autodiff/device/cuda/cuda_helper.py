@@ -81,7 +81,7 @@ def free_context (context):
 def init_buffer (fp_size): 
     return init_c_var(
         cuda.CUdeviceptr(), 
-        lambda x: check(cuda.cuMemAlloc_v2(ctypes.byref(x), fp_size*4))
+        lambda x: check(cuda.cuMemAlloc_v2(ctypes.byref(x), fp_size*4)) # note: assumes f32!
     )
 
 def read_buffers (buf_ptrs, shapes, offsets, func):

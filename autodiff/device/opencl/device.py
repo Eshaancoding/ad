@@ -7,7 +7,7 @@ from .cl_helper import *
 from typing import Callable
 
 class OpenCLDevice (Device):
-    def __init__(self, sel: CLDevice):
+    def __init__(self, sel: CLDevice = CLDevice.ALL):
         super().__init__()
 
         # other variables

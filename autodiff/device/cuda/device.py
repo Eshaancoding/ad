@@ -43,7 +43,11 @@ class CudaDevice (Device):
                 return
             case AllocEntry():
                 if not cmd.is_temp:
-                    self.buffers[cmd.id] = init_buffer(self.context, cmd.size, cmd.content)
+                    self.buffers[cmd.id] = init_buffer(cmd.size)
+                    
+                    # write buffer if we need to
+                    if cmd.content is not None:
+                        write_buffer(self.buffers[cmd.id], cmd.content, offset=0)
                 return
             case DotProdNode(): mod, func = init_dotprod(self, cmd)
             case UnaryNode(): mod, func = init_unary(self, cmd)
