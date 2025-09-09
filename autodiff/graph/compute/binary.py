@@ -28,7 +28,8 @@ class BinaryNode (Node):
 
     def __repr__ (self) -> str:
         total = math.prod(self.shape)
-        op_str = stylize(f"{self.op.name}{" IN PLACE" if self.in_place else ""}", fore("medium_turquoise"))
+        in_place_str = " IN PLACE" if self.in_place else ""
+        op_str = stylize(f"{self.op.name}{in_place_str}", fore("medium_turquoise"))
         size_str = stylize(str(total), fore("yellow") + style("bold"))
         
         if self.kargs[0].is_none() or self.kargs[1].is_none() or self.kres.is_none():
