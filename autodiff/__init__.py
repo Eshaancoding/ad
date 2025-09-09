@@ -67,8 +67,6 @@ def execute ():
     # Apply allocations + opts on allocs
     alloc(proc)
 
-    print(proc)
-
     # assign program id for each node that is about to be executed
     def assign_program_id (n: Node, _):
         if isinstance(n, Node) or isinstance(n, FuseBase):

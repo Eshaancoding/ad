@@ -456,10 +456,5 @@ def build_kernel (
 def waitAll (command_queue: cl.struct__cl_command_queue):
     cl.clFinish(command_queue)
 
-def waitForEvents (events):
-    event_array_type = cl.cl_event * len(events)
-    event_array = event_array_type(*events)
-    cl.clWaitForEvents(len(events), event_array)
-
 def free_kernel (kernel: cl.struct__cl_kernel):
     cl.clReleaseKernel(kernel)

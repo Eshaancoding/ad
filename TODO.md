@@ -2,14 +2,15 @@
 
 ## Main Todo
 
-* make sure it works against non-power-of-2 things
-
 * Numerical tests 
     * different opts + neural networks, etc.
-
     * Double check: Make sure you can do divergent branching correctly
 
+    * make sure it works against non-power-of-2 things
+
 * Simple change: tetris alloc try different types of sorting and pick the best one
+
+* have a general "C-style" backend and then have opencl override them, etc.
 
 ----- performance testing? save to drive  -----
 
@@ -55,6 +56,7 @@
 * Add CUDA support + advanced dotprod (probably need an external device lowk)
     * this is where you are going more into the backend kernel space
     * look more into kernel experimentation (look below) etc.
+    * PTX!
 
 * Eventually, your goal is to make the forward + backward process into one kernel as much as possible. 
     * In fact, research at stanford does this for the forward pass of LLM. [Link](https://hazyresearch.stanford.edu/blog/2025-05-27-no-bubbles)
@@ -67,7 +69,11 @@
         * reason why multiple kernels on enqueue are slow is because they require synchronization
             * we want to decrease the amount of synchronization as much as possible
 
+* different floating point formats; fp8, fp16, fp32, etc.
+    * then, you can actually use the tensor cores accordingly
+
 * Tensor/multi-gpu sharding
+    * peer to peer in CUDA is pretty helpful as well
 
 * New attention mechanism?
 
