@@ -9,9 +9,9 @@ import autodiff
 import numpy as np
 
 def assert_results (result, result_two, input_grad):
-    assert round(result.sum(), 5) == 6.2689
-    assert round(result_two.sum(), 5) == 4.78375
-    assert round(input_grad.sum(), 5) == 5.39896
+    assert round(result.sum().item(), 5) == 6.2689
+    assert round(result_two.sum().item(), 5) == 4.78375
+    assert round(input_grad.sum().item(), 5) == 5.39896
 
 def test_unary ():
     autodiff.graph.tensor.is_testing = True

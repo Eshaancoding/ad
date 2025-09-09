@@ -27,16 +27,6 @@ def test_variance ():
             [8, 10, 12]
         ])).item() == True
 
-        print("result")
-        print(res) 
-        print("grad")
-        print(x_grad)
-
-        print(res == np.array([
-            [25, 36, 9],
-            [16, 25, 36]
-        ]))
-
     Receiver(asrt, [
         res,
         x.grad()

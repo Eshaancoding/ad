@@ -5,8 +5,8 @@ import autodiff
 import torch
 
 def assert_results (result, input_grad):
-    assert round(result.sum(), 4) == -3.2747
-    assert round(input_grad.sum(), 4) == 8.2885
+    assert round(result.sum().item(), 4) == -3.2747
+    assert round(input_grad.sum().item(), 4) == 8.2885
 
 def test_dotprod ():
     torch.manual_seed(42)
