@@ -59,15 +59,15 @@ def print_info (dev):
         ctypes.byref(minor := ctypes.c_int()), 
         0 # only the first device for now
     ))
-
+    
     # Get name of device <-- not sure about this code
-    properties = init_c_var(
-        cuda.CUdevprop(),
-        lambda x: check(cuda.cuDeviceGetProperties(ctypes.byref(x), dev))
-    )
+    name = ctypes.string_at(init_c_var(
+        ctypes.POINTER(ctypes.c_char)(), 
+        lambda x: cuda.cuDeviceGetName(x, 100, dev)
+    )).decode()
 
     arch = f"sm_{major.value}_{minor.value}"
-    print(f"Using Cuda Device: {properties.name.decode('utf-8')} with architecture: {arch}")
+    print(f"Using Cuda Device: {name} with architecture: {arch}")
 
     return arch
 
