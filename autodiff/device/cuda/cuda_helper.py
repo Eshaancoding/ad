@@ -35,6 +35,7 @@ def to_char_p_p(options: list[bytes], to_type=ctypes.c_char):
 
 ####################### Initialization #######################
 def init_device ():
+    check(cuda.cuInit(0))
     return init_c_var(
         cuda.CUdevice(), 
         lambda x: check(cuda.cuDeviceGet(ctypes.byref(x), 0)) # only the first device for now
