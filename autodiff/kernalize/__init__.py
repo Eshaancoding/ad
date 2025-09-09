@@ -94,7 +94,8 @@ class KConcat (KernelArg):
         from ..helper import indent_str
         
         # return f"Concat (\n{indent_str(self.karg_one)}\n{indent_str(self.karg_two)}\ncondition: {self.condition})"
-        return f"\nConcat (\n{indent_str(f"1: {self.karg_one}\n2: {self.karg_two}\ncond: {self.condition}")}\n)\n"
+        ind_str = indent_str(f"1: {self.karg_one}\n2: {self.karg_two}\ncond: {self.condition}")
+        return f"\nConcat (\n{ind_str}\n)\n"
     
     def get_ids (self, filter_temp=False):
         a = self.karg_one.get_ids(filter_temp)
