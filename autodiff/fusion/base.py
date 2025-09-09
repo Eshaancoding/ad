@@ -78,8 +78,10 @@ class FuseBase ():
 
     # For debugging purposes
     def __repr__(self):
+        fuse_id_colored = stylize(str(self.fuse_id), fore("green") + style("bold"))
+
         st = stylize(f"{type(self).__name__} Fusion", fore("light_blue")) + \
-            f" (fuse_id: {stylize(str(self.fuse_id), fore("green") + style("bold"))}):\n"
+            f" (fuse_id: {fuse_id_colored}):\n"
 
         for n in self.nodes:
             st += indent_str(str(n)) + "\n"
