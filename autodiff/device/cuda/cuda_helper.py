@@ -183,9 +183,12 @@ def build_kernel (
     #print(ptx)
 
     # Load as function from PTX!
-    check(cuda.cuModuleLoad(
+    check(cuda.cuModuleLoadDataEx(
         ctypes.byref(module := cuda.CUmodule()), 
-        ptx_buffer
+        ptx_buffer,
+        0,
+        0,
+        0
     ))
 
     check(cuda.cuModuleGetFunction(
