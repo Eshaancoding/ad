@@ -183,12 +183,12 @@ def build_kernel (
     #print(ptx)
 
     # Load as function from PTX!
-    nvrtc_check(cuda.cuModuleLoad(
+    check(cuda.cuModuleLoad(
         ctypes.byref(module := cuda.CUmodule()), 
         ptx_buffer
     ))
 
-    nvrtc_check(cuda.cuModuleGetFunction(
+    check(cuda.cuModuleGetFunction(
         ctypes.byref(func := cuda.CUfunction()), 
         module, 
         ctypes.create_string_buffer(name.encode('utf-8'))
