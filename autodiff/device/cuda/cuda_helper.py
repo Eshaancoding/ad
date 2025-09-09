@@ -61,7 +61,6 @@ def print_info (dev):
     ))
     
     # Get name of device <-- not sure about this code
-    print("Getting name...")
     name = ctypes.string_at(init_c_var(
         ctypes.create_string_buffer(100),
         lambda x: cuda.cuDeviceGetName(x, 100, dev)
@@ -150,7 +149,8 @@ def build_kernel (
     global_size: List[int] = (1,1,1),
     local_size: List[int] = (1,1,1),
 ):
-    compile_options = [f'--gpu-architecture={gpu_arch}']
+    #compile_options = [f'--gpu-architecture={gpu_arch}']
+    compile_options = []
     compile_options += ["-I/usr/local/cuda/include", "-I/usr/include", "-I/opt/cuda/include"]
 
     # Create program

@@ -7,6 +7,7 @@
     * Double check: Make sure you can do divergent branching correctly
 
     * make sure it works against non-power-of-2 things
+        * non-div-2 reduce --> can fail at some backends
 
 * Simple change: tetris alloc try different types of sorting and pick the best one
 
