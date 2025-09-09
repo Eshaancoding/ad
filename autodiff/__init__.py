@@ -37,6 +37,7 @@ def execute ():
     from .linearize import linearize
     from .alloc import alloc
     from .device.opencl import OpenCLDevice, CLDevice
+    from .device.cuda.device import CudaDevice
     from .opt import mem_opt, set_in_place
 
     # prepare context for execution
@@ -77,7 +78,7 @@ def execute ():
     # Send procedure to device to be executed
     print("executing...")
     start = time()
-    OpenCLDevice(CLDevice.GPU).execute(proc)
+    CudaDevice().execute(proc)
     print(f"********* EXEC TIME: {(time() - start)*1000:.3f} ms **********") 
 
 ##########################################
