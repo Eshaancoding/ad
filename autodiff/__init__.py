@@ -63,6 +63,8 @@ def execute ():
     # perform memory optimization
     proc = benchmark(lambda: mem_opt(proc), "mem opt")
 
+    print(proc)
+
     # apply linear optimizations (dep opt, mem opt, as well as some memory accessing regrouping if needed)
     # see if you can make fusion better here as well (test)
     # Apply allocations + opts on allocs

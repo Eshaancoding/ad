@@ -109,7 +109,7 @@ class CudaDevice (Device):
 
     def __del__ (self):
         # free buffers
-        for buf in self.buffers:
+        for buf in self.buffers.values():
             free_buffer(buf)
         print(f"Freed {len(self.buffers)} buffers")
 

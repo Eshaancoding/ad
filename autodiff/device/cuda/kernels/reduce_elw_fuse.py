@@ -28,6 +28,12 @@ def init_reduce_elw_fuse (dev: CudaDevice, cmd: ReduceElwFuse):
     name = f"reduce_elw_fuse_{cmd.program_id}"
     args, program_args = lower_args(cmd)
     reduce_node = cmd.init_node
+
+    # get sizes
+    sh = reduce_node.children_shapes[0]
+    vec_size = sh[0] 
+    reduce_size = sh[1]
+    local_size = ceil(reduce_size / 2) * 2
     
     # construct program
     program_str = f"""
@@ -63,12 +69,6 @@ __global__ void {name} (
 }}           
     """.strip()
     
-    # get sizes
-    sh = reduce_node.children_shapes[0]
-    vec_size = sh[0] 
-    reduce_size = sh[1]
-    local_size = ceil(reduce_size / 2) * 2
-   
     # buffer args
     args = [Buffer(dev.buffers[buf_id]) for buf_id in args]
     args.append(Int(reduce_size))
