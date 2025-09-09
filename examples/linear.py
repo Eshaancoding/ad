@@ -23,10 +23,9 @@ def print_inp (res):
     pass
 
 def save_params (*args):
-    pass
-    #print(len(args))
-    #for arg in args:
-        #print(arg)
+    print(len(args))
+    for arg in args:
+        print(arg)
 
 opt = SGD(nn.parameters(), lr=0.01)
 def f():
