@@ -42,7 +42,7 @@ def init_device ():
     )
 
 def init_context (dev):
-    f = cuda.cuCtxCreate_v3 if use_latest else cuda.cuCtxCreate
+    f = cuda.cuCtxCreate_v2 if use_latest else cuda.cuCtxCreate
     
     ctx = init_c_var(
         cuda.CUcontext(), 
