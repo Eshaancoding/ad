@@ -178,9 +178,11 @@ def build_kernel (
     nvrtc_check(nvrtc.nvrtcDestroyProgram(ctypes.byref(prog))) # destroy program; we have ptx
 
     # to get ptx as python string -- if we are trying to debug
-    #ptx = ctypes.string_at(ptx_buffer, ptx_size.value).decode('utf-8').rstrip('\0') 
-    #print("************ Generated ptx ************")
-    #print(ptx)
+    ptx = ctypes.string_at(ptx_buffer, ptx_size.value).decode('utf-8').rstrip('\0') 
+    print("************ Generated ptx ************")
+    print(ptx)
+    print()
+    print(f"Name: {name}")
 
     # Load as function from PTX!
     check(cuda.cuModuleLoadData(
