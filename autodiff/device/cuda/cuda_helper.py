@@ -191,7 +191,7 @@ def build_kernel (
     check(cuda.cuModuleGetFunction(
         ctypes.byref(func := cuda.CUfunction()), 
         module, 
-        name
+        name.encode()
     ))
 
     # prepare parameters
