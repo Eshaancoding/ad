@@ -12,7 +12,7 @@ class SimpleTransformerEncoder(nn.Module):
             nhead=num_heads,
             dim_feedforward=ff_dim,
             batch_first=True,   # aligns with your (batch, seq, feature)
-            activation="gelu",  # closer to modern transformer practice
+            activation="relu",  # closer to modern transformer practice
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
@@ -34,7 +34,7 @@ opt = optim.SGD(model.parameters(), lr=0.01)
 
 # Wrap forward/backward+step in a single function
 def step_fn():
-    x = torch.full((2, 64, 64), 0.3, dtype=torch.float32, device=device)  
+    x = torch.full((2, 64), 0.3, dtype=torch.float32, device=device)  
     # shaped as (batch=2, seq=64, d_model=64)
     out = model(x)
 
