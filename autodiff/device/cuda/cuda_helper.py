@@ -170,6 +170,10 @@ def build_kernel (
         to_char_p_p([o.encode() for o in compile_options])
     ), prog)
 
+     # Get mangled (lowered) kernel name
+    lowered_name_ptr = ctypes.c_char_p()
+    nvrtc_check(nvrtc.nvrtcGetLoweredName(prog, name.encode(), ctypes.byref(lowered_name_ptr)))
+
     # get ptx
     ptx_size = ctypes.c_uint64()
     nvrtc_check(nvrtc.nvrtcGetPTXSize(prog, ctypes.byref(ptx_size)))
@@ -177,12 +181,13 @@ def build_kernel (
     nvrtc_check(nvrtc.nvrtcGetPTX(prog, ptx_buffer))
     nvrtc_check(nvrtc.nvrtcDestroyProgram(ctypes.byref(prog))) # destroy program; we have ptx
 
-    # to get ptx as python string -- if we are trying to debug
-    ptx = ctypes.string_at(ptx_buffer, ptx_size.value).decode('utf-8').rstrip('\0') 
-    print("************ Generated ptx ************")
-    print(ptx)
-    print()
-    print(f"Name: {name}")
+    if True: # if we want to debug
+        mangled_name = lowered_name_ptr.value.decode()  # Use for cuModuleGetFunction
+        ptx = ctypes.string_at(ptx_buffer, ptx_size.value).decode('utf-8').rstrip('\0') 
+        print("************ Generated ptx ************")
+        print(ptx)
+        print()
+        print(f"Mangled Name: {mangled_name}")
 
     # Load as function from PTX!
     check(cuda.cuModuleLoadData(
@@ -193,7 +198,7 @@ def build_kernel (
     check(cuda.cuModuleGetFunction(
         ctypes.byref(func := cuda.CUfunction()), 
         module, 
-        ctypes.create_string_buffer(name.encode('utf-8'))
+        lowered_name_ptr
     ))
 
     # prepare parameters
