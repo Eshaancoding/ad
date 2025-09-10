@@ -54,8 +54,8 @@ num_steps = 3000
 start = time.time()
 for i in range(num_steps):
     loss = compiled_step()
-    if (i+1) % 100 == 0:
-        print(f"Step {i+1}: loss={loss.item():.4f}")
+    #if (i+1) % 100 == 0:
+    #    print(f"Step {i+1}: loss={loss.item():.4f}")
 end = time.time()
 
 print(f"Full execution time for {num_steps} steps: {end - start:.2f}s")
