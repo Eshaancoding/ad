@@ -11,7 +11,7 @@ from autodiff.helper import benchmark
 import numpy as np
 
 nn = TransformerEncoder(
-    num_layers=2, 
+    num_layers=3, 
     d_model=64,
     num_heads=4,
     ff_dim=128
