@@ -207,8 +207,12 @@ def build_kernel (
     # enqueue function
     return module, lambda: check(cuda.cuLaunchKernel(
         func, 
-        *global_size,   # global size; x,y,z
-        *local_size,    # local size; x,y,z
+        global_size[0], # global size
+        global_size[1],
+        global_size[2],
+        local_size[0],  # lcoal size
+        local_size[1],
+        local_size[2],
         0,              # dynamic shared mem bytes; not configured (
         None,           # stream to launch kernel; by default 0
         kernel_params,  # kernel args
