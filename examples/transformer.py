@@ -19,10 +19,10 @@ nn = TransformerEncoder(
 
 idx = 0
 def get_inp ():
-    global idx
-    if (idx+1) % 100 == 0:
-        print(f"Get inp Idx: {idx+1}")
-    idx += 1
+    #global idx
+    #if (idx+1) % 100 == 0:
+    #   print(f"Get inp Idx: {idx+1}")
+    #idx += 1
     return np.full((2,64), 0.3, dtype=np.float32)
 
 def save_params (*args):
