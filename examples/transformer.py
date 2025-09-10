@@ -26,9 +26,9 @@ def get_inp ():
     return np.full((2,64), 0.3, dtype=np.float32)
 
 def save_params (*args):
-    print(len(args))
-    for arg in args:
-        print(np.sum(arg))
+    print(f"Number of params: {len(args)}")
+    #for arg in args:
+    #    print(np.sum(arg))
 
 opt = SGD(nn.parameters(), lr=0.01)
 def f():
