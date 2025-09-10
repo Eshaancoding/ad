@@ -104,7 +104,13 @@ class CudaDevice (Device):
 
     def execute (self, proc: Proc):
         self._run_proc(proc, self.init, init=True)
+    
+        from time import time
+        start = time()
         self._run_proc(proc, self.run, init=False)
+        end = time()
+        print(f"========== Actual exec time: {(end - start)*1000:.3f} ms EXEC TIME ==========") 
+
         waitAll()
 
     def __del__ (self):
