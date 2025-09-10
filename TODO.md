@@ -2,6 +2,8 @@
 
 ## Main Todo
 
+* have a general "C-style" backend and then have opencl override them, etc.
+
 * Numerical tests 
     * different opts + neural networks, etc.
     * Double check: Make sure you can do divergent branching correctly
@@ -10,10 +12,6 @@
         * non-div-2 reduce --> can fail at some backends
 
 * Simple change: tetris alloc try different types of sorting and pick the best one
-
-* have a general "C-style" backend and then have opencl override them, etc.
-
------ performance testing? save to drive  -----
 
 * Memory grouping: like mem should be grouped together accordingly
 
@@ -148,6 +146,13 @@
             * dot product (contigious write) --> movement --> sum --> movement --> dot product (contigious read)
 
             * etc. etc. etc. 
+
+## Successful Experiments: 
+
+1. 1-layer transformer
+    * execution time for OUR lib: 1.32 seconds
+    * pytorch compile 2.0: 3.58 seconds
+2. 2-layer transformer
 
 ## Frontend
 
