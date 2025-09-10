@@ -147,12 +147,18 @@
 
             * etc. etc. etc. 
 
-## Successful Experiments: 
+## experiment results - Sept 10th 2025
 
 1. 1-layer transformer
     * execution time for OUR lib: 1.32 seconds
     * pytorch compile 2.0: 3.58 seconds
 2. 2-layer transformer
+    * execution time for our lib: 2.71 seconds
+    * pytorch compile 2.0: 4.22 seconds
+3. 3-layer transformer
+    * execution time for our lib: 4.17 seconds
+    * pytorch compile 2.0: 4.82 seconds
+    
 
 ## Frontend
 

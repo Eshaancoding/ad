@@ -27,7 +27,7 @@ model = SimpleTransformerEncoder(
     d_model=64,
     num_heads=4,
     ff_dim=128,
-    num_layers=3
+    num_layers=4
 ).to(device)
 
 opt = optim.SGD(model.parameters(), lr=0.01)
