@@ -44,6 +44,5 @@ extern "C" __global__ void {name} (
         name,
         program_str,
         args,
-        dev.arch,
         (cmd.shape[1], cmd.shape[0], 1),
     )

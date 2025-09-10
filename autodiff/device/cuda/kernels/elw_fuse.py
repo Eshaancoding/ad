@@ -45,6 +45,5 @@ extern "C" __global__ void {name} (
         name, 
         program_str, 
         args, 
-        dev.arch, 
         (prod(cmd.init_node.shape), 1, 1)
     )

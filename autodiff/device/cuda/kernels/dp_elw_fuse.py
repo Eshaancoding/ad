@@ -65,6 +65,5 @@ extern "C" __global__  void {name} (
         name, 
         program_str, 
         args, 
-        dev.arch, 
         (dpnode.shape[1], dpnode.shape[0], 1)
     )

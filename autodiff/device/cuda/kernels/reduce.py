@@ -61,13 +61,12 @@ extern "C" __global__ void {name} (
     args.append(Int(reduce_size))
 
     global_size = (int(local_size * vec_size), 1, 1)
-    local_size = (int(local_size), )
+    local_size = (int(local_size), 1, 1)
     
     return build_kernel(
         name, 
         program_str, 
         args,
-        dev.arch,
         global_size, 
         local_size
     )

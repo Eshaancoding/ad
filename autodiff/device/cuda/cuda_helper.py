@@ -145,10 +145,12 @@ def build_kernel (
     name: str,
     program_source: str,
     args: List[KernelArgs],
-    gpu_arch: str,
     global_size: List[int] = (1,1,1),
     local_size: List[int] = (1,1,1),
 ):
+    assert len(global_size) == 3
+    assert len(local_size) == 3
+
     compile_options = []
     compile_options += ["-I/usr/local/cuda/include", "-I/usr/include", "-I/opt/cuda/include"]
 
