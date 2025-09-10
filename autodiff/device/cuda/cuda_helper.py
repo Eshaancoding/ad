@@ -171,12 +171,15 @@ def build_kernel (
     ), prog)
 
     # Get mangled (lowered) kernel name
-    lowered_name_ptr = ctypes.c_char_p()
-    nvrtc_check(nvrtc.nvrtcGetLoweredName(prog, name.encode(), ctypes.byref(lowered_name_ptr)))
+    lowered_name_ptr = (ctypes.c_char_p() * 1)()
+    nvrtc_check(nvrtc.nvrtcGetLoweredName(
+        prog, 
+        name.encode(), 
+        ctypes.byref(lowered_name_ptr)
+    ))
 
     # get ptx
-    ptx_size = ctypes.c_uint64()
-    nvrtc_check(nvrtc.nvrtcGetPTXSize(prog, ctypes.byref(ptx_size)))
+    nvrtc_check(nvrtc.nvrtcGetPTXSize(prog, ctypes.byref(ptx_size := ctypes.c_uint64())))
     ptx_buffer = (ctypes.c_char * ptx_size.value)()
     nvrtc_check(nvrtc.nvrtcGetPTX(prog, ptx_buffer))
     nvrtc_check(nvrtc.nvrtcDestroyProgram(ctypes.byref(prog))) # destroy program; we have ptx
