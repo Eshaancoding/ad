@@ -171,6 +171,8 @@ def build_kernel (
     ), prog)
 
     # Get mangled (lowered) kernel name
+    print(program_source)
+    print(name)
     lowered_name_ptr = ctypes.POINTER(ctypes.c_char)()
     nvrtc_check(nvrtc.nvrtcGetLoweredName(
         prog, 
