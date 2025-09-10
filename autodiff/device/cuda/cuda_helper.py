@@ -170,7 +170,7 @@ def build_kernel (
         to_char_p_p([o.encode() for o in compile_options])
     ), prog)
 
-     # Get mangled (lowered) kernel name
+    # Get mangled (lowered) kernel name
     lowered_name_ptr = ctypes.c_char_p()
     nvrtc_check(nvrtc.nvrtcGetLoweredName(prog, name.encode(), ctypes.byref(lowered_name_ptr)))
 
