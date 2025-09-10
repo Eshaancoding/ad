@@ -150,14 +150,20 @@
 ## experiment results - Sept 10th 2025
 
 1. 1-layer transformer
-    * execution time for OUR lib: 1.32 seconds
+    * our lib: 1.32 seconds
     * pytorch compile 2.0: 3.58 seconds
 2. 2-layer transformer
-    * execution time for our lib: 2.71 seconds
+    * our lib: 2.71 seconds
     * pytorch compile 2.0: 4.22 seconds
 3. 3-layer transformer
-    * execution time for our lib: 4.17 seconds
+    * our lib: 4.17 seconds
     * pytorch compile 2.0: 4.82 seconds
+4. 4-layer transformer
+    * execution time for our lib: 5.195 seconds
+    * pytorch compile 2.0: 5.68 seconds
+
+* it makes sense that pytorch will eventually catch up
+    * the kernel themselves are not optimized!
     
 
 ## Frontend
