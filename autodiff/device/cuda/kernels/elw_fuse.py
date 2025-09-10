@@ -30,7 +30,7 @@ def init_elwfuse (dev: CudaDevice, cmd: ElwFuse):
     
     # construct program
     program_str = f"""
-__global__ void {name} (
+extern "C" __global__ void {name} (
     {program_args}
 ) {{
     int _global_id = blockIdx.x;elwfuse.y

@@ -24,7 +24,7 @@ def init_reduce (dev: CudaDevice, cmd: ReduceNode):
     
     # construct program
     program_str = f"""
-__global__ void {name} (
+extern "C" __global__ void {name} (
     {program_args},
     int _l_size
 ) {{

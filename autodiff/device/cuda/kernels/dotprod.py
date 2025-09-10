@@ -10,7 +10,7 @@ def init_dotprod (dev: CudaDevice, cmd: DotProdNode):
 
     # construct program
     program_str = f"""
-__kernel void {name} (
+extern "C" __global__ void {name} (
     {program_args},
     int _wA
 ) {{

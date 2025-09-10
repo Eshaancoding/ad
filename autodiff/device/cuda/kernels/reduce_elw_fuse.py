@@ -37,7 +37,7 @@ def init_reduce_elw_fuse (dev: CudaDevice, cmd: ReduceElwFuse):
     
     # construct program
     program_str = f"""
-__global__ void {name} (
+extern "C" __global__ void {name} (
     {program_args},
     int _l_size
 ) {{

@@ -19,7 +19,7 @@ def init_binary (dev:CudaDevice, cmd: BinaryNode) -> Callable:
     name = f"binary_{cmd.program_id}"
     args, program_args = lower_args(cmd)
     program_str = f"""
-__global__ void {name} (
+extern "C" __global__ void {name} (
     {program_args}
 ) {{
     int _global_id = blockIdx.x;

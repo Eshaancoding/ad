@@ -40,7 +40,7 @@ def init_unary (dev: CudaDevice, cmd: UnaryNode):
 
     # construct program
     program_str = f"""
-__global__ void {name} (
+extern "C" __global__ void {name} (
     {program_args}
 ) {{
     int _global_id = blockIdx.x;

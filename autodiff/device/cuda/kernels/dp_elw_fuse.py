@@ -29,7 +29,7 @@ def init_dp_elw_fuse (dev: CudaDevice, cmd: DPElwFuse):
 
     # construct program
     program_str = f"""
-__global__  void {name} (
+extern "C" __global__  void {name} (
     {program_args},
     int _wA,
     int _wB
