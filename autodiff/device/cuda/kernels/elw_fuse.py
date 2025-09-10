@@ -33,7 +33,7 @@ def init_elwfuse (dev: CudaDevice, cmd: ElwFuse):
 extern "C" __global__ void {name} (
     {program_args}
 ) {{
-    int _global_id = blockIdx.x;elwfuse.y
+    int _global_id = blockIdx.x;
     {lower_elwfuse(cmd)} 
 }}           
     """.strip()

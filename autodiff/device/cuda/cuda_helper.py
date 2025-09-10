@@ -175,7 +175,8 @@ def build_kernel (
     nvrtc_check(nvrtc.nvrtcGetPTX(prog, ptx_buffer))
     nvrtc_check(nvrtc.nvrtcDestroyProgram(ctypes.byref(prog))) # destroy program; we have ptx
 
-    if True: # if we want to debug
+    if False: # if we want to debug
+        # ... this is really nice
         ptx = ctypes.string_at(ptx_buffer, ptx_size.value).decode('utf-8').rstrip('\0') 
         print("************ Generated ptx ************")
         print(ptx)
