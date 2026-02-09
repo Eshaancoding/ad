@@ -41,7 +41,7 @@ def f():
     #Receiver(lambda _: None, [res])
 
 # In future release pass the idx
-benchmark(lambda: ir_for(range(0, 3000), f), name="Tracking nodes")
+benchmark(lambda: ir_for(range(0, 500), f), name="Tracking nodes")
 Receiver(save_params, opt.parameters, name="saving params")
 benchmark(lambda: execute(), name="full exec")
 

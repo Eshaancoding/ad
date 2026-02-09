@@ -2,18 +2,10 @@
 
 ## Main Todo
 
-* have a general "C-style" backend and then have opencl override them, etc.
-
-* Numerical tests 
-    * different opts + neural networks, etc.
-    * Double check: Make sure you can do divergent branching correctly
-
-    * make sure it works against non-power-of-2 things
-        * non-div-2 reduce --> can fail at some backends
-
-* Simple change: tetris alloc try different types of sorting and pick the best one
-
-* Memory grouping: like mem should be grouped together accordingly
+* Add CUDA support + advanced dotprod (probably need an external device lowk)
+    * this is where you are going more into the backend kernel space
+    * look more into kernel experimentation (look below) etc.
+    * PTX!
 
 * **MAJOR** add more control
     * match (selection w/ different expressons)
@@ -44,6 +36,13 @@
         * more research needs to be done in that area
     * then, you can add dynamic slices with indexing, etc.
 
+* Numerical tests 
+    * different opts + neural networks, etc.
+    * Double check: Make sure you can do divergent branching correctly
+
+    * make sure it works against non-power-of-2 things
+        * non-div-2 reduce --> can fail at some backends
+
 * Indexing via a non constant node
     * can't do slices --> requires dynamic shapes
     * add pytest for this
@@ -51,11 +50,6 @@
 * More frontend support (see below)
 
 --------- Get to this stage as quickly as possible ----------
-
-* Add CUDA support + advanced dotprod (probably need an external device lowk)
-    * this is where you are going more into the backend kernel space
-    * look more into kernel experimentation (look below) etc.
-    * PTX!
 
 * Eventually, your goal is to make the forward + backward process into one kernel as much as possible. 
     * In fact, research at stanford does this for the forward pass of LLM. [Link](https://hazyresearch.stanford.edu/blog/2025-05-27-no-bubbles)
@@ -68,10 +62,10 @@
         * reason why multiple kernels on enqueue are slow is because they require synchronization
             * we want to decrease the amount of synchronization as much as possible
 
-* different floating point formats; fp8, fp16, fp32, etc.
+* **MAJOR**: different floating point formats; fp8, fp16, fp32, etc.
     * then, you can actually use the tensor cores accordingly
 
-* Tensor/multi-gpu sharding
+* **MAJOR**: Tensor/multi-gpu sharding
     * peer to peer in CUDA is pretty helpful as well
 
 * New attention mechanism?
@@ -86,8 +80,14 @@
             * ex: splitting heads
 
 ## Extra TODO
+* have a general "C-style" backend and then have opencl override them, etc.
+
 * ternary statements?
     * could be even more advanced like: x>0 ? g(x) : f(x) where g(x) and f(x) could be full neural network functions
+
+* Simple change: tetris alloc try different types of sorting and pick the best one
+
+* Memory grouping: like mem should be grouped together accordingly
 
 * **EXTRA**: index available at "for" node 
     * store copies at CPU + device.
@@ -96,7 +96,7 @@
 * **EXTRA**: Divergent branching conflicts
     * if different, push the computation match/if statement itself
 
-* **EXTRA:**: experiment more with **read async callback?** in OpenCL
+* **EXTRA:**: experiment more with **read async callback?** 
 
 * **EXTRA:**: Better linearizer?
     * other methods towards linearizer. Instead of one op at a time, you can have ops competing for the same result
@@ -164,6 +164,7 @@
 
 * it makes sense that pytorch will eventually catch up
     * the kernel themselves are not optimized!
+    * look at desmos graph. Slowly pytorch catches up because of kernels
     
 
 ## Frontend
