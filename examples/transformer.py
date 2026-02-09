@@ -19,16 +19,10 @@ nn = TransformerEncoder(
 
 idx = 0
 def get_inp ():
-    #global idx
-    #if (idx+1) % 100 == 0:
-    #   print(f"Get inp Idx: {idx+1}")
-    #idx += 1
     return np.full((2,64), 0.3, dtype=np.float32)
 
 def save_params (*args):
     print(f"Number of params: {len(args)}")
-    #for arg in args:
-    #    print(np.sum(arg))
 
 opt = SGD(nn.parameters(), lr=0.01)
 def f():
@@ -40,7 +34,6 @@ def f():
 
     #Receiver(lambda _: None, [res])
 
-# In future release pass the idx
 benchmark(lambda: ir_for(range(0, 500), f), name="Tracking nodes")
 Receiver(save_params, opt.parameters, name="saving params")
 benchmark(lambda: execute(), name="full exec")

@@ -34,7 +34,7 @@ opt = optim.SGD(model.parameters(), lr=0.01)
 
 # Wrap forward/backward+step in a single function
 def step_fn():
-    x = torch.full((2, 64), 0.3, dtype=torch.float32, device=device)  
+    x = torch.full((2, 64), 0.3, dtype=torch.float32, device=device)  # initialize directly on device
     # shaped as (batch=2, seq=64, d_model=64)
     out = model(x)
 

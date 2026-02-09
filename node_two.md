@@ -18,6 +18,4 @@ ReduceElwFuse:
 
 In this case, it should **remove them** altogether
 
-
-
 **NOTE THAT I'VE BEEN UNRESTRICT THE SIZE REQUIREMENT. ANYWAY TO CIRCUMSTANCE IT?**

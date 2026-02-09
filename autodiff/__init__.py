@@ -48,7 +48,7 @@ def execute ():
     benchmark(lambda: simpl_node(context), "simplify node") # apply graph-level optimizations (ex: constant simplification)
     benchmark(lambda: repeat_opt(context), "repeat opt")    # removes computation already repeated
 
-    #pg()
+    pg()
 
     # Kernalize the graph; remove the data cmds and just use access expressions
     # From this point on, each children node should rely on kwargs_child_id rather than iterating over children (because of Concat)
